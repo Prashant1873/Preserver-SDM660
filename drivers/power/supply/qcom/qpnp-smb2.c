@@ -241,18 +241,7 @@ struct smb2 {
 	bool			bad_part;
 };
 
-#ifdef CONFIG_MACH_LONGCHEER
 static int __debug_mask;
-#elif defined(CONFIG_MACH_MI)
-static int __debug_mask = PR_MISC | PR_PARALLEL | PR_OTG;
-#else
-static int __debug_mask;
-#endif
-#ifdef CONFIG_MACH_XIAOMI_CLOVER
-struct smb_charger *smbchg_dev;
-#endif
-
-
 module_param_named(
 	debug_mask, __debug_mask, int, S_IRUSR | S_IWUSR
 );
