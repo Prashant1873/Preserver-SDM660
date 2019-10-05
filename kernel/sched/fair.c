@@ -91,6 +91,11 @@ static unsigned int sched_nr_latency = 10;
 unsigned int sysctl_sched_child_runs_first __read_mostly = 0;
 
 /*
+ * To enable/disable energy aware feature.
+ */
+unsigned int __read_mostly sysctl_sched_energy_aware = 1;
+
+/*
  * SCHED_OTHER wake-up granularity.
  * (default: 1 msec * (1 + ilog(ncpus)), units: nanoseconds)
  *
@@ -5511,6 +5516,10 @@ struct energy_env {
 	 * the specified energy_env::task
 	 */
 	int			next_idx;
+static inline bool energy_aware(void)
+{
+	return sysctl_sched_energy_aware;
+}
 
 	/* Support data */
 	struct sched_group	*sg_top;
