@@ -18,7 +18,13 @@ obj-$(CONFIG_BLK_DEV_THROTTLING)	+= blk-throttle.o
 obj-$(CONFIG_IOSCHED_NOOP)	+= noop-iosched.o
 obj-$(CONFIG_IOSCHED_DEADLINE)	+= deadline-iosched.o
 obj-$(CONFIG_IOSCHED_CFQ)	+= cfq-iosched.o
+obj-$(CONFIG_IOSCHED_ANXIETY)	+= anxiety-iosched.o
 obj-$(CONFIG_IOSCHED_TEST)	+= test-iosched.o
+<<<<<<< HEAD
+=======
+obj-$(CONFIG_IOSCHED_DEPRESSION)	+= depression-iosched.o
+obj-$(CONFIG_IOSCHED_TRIPNDROID) += tripndroid-iosched.o
+>>>>>>> b6db96bffea0... block: Add tripndroid and anxiety iosched
 
 obj-$(CONFIG_BLOCK_COMPAT)	+= compat_ioctl.o
 obj-$(CONFIG_BLK_CMDLINE_PARSER)	+= cmdline-parser.o
