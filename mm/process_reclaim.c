@@ -493,6 +493,10 @@ static void __exit process_reclaim_exit(void)
 }
 
 module_init(process_reclaim_init);
+<<<<<<< HEAD
 module_exit(process_reclaim_exit);
 
 #endif
+=======
+module_exit(process_reclaim_exit);
+>>>>>>> 6e1fec7d30ba... mm: Remove process reclaim
