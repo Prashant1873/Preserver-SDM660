@@ -97,6 +97,10 @@ static void nvt_ts_late_resume(struct early_suspend *h);
 #include <linux/input/tp_common.h>
 #endif
 
+#ifdef CONFIG_TOUCHSCREEN_COMMON
+#include <linux/input/tp_common.h>
+#endif
+
 #if TOUCH_KEY_NUM > 0
 const uint16_t touch_key_array[TOUCH_KEY_NUM] = {
 	KEY_BACK,
