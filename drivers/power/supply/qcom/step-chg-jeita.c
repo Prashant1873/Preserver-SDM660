@@ -129,9 +129,10 @@ static struct jeita_fcc_cfg jeita_fcc_config = {
 	.fcc_cfg	= {
 		/* TEMP_LOW	TEMP_HIGH	FCC */
 #ifdef CONFIG_MACH_XIAOMI_WAYNE
-		{0,		50,		300000},
-		{51,		150,		900000},
-		{151,		450,		2900000},
+		{0,			50,			 400000},
+		{51,		150,		1200000},
+		{151,		430,		2500000},
+		{431,		450,		2000000},
 		{451,		600,		1500000},
 #elif defined(CONFIG_MACH_XIAOMI_LAVENDER)
 		{0,		50,		400000},
