@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0
 menu "Android"
 
 config ANDROID
@@ -9,7 +10,7 @@ if ANDROID
 
 config ANDROID_BINDER_IPC
 	bool "Android Binder IPC Driver"
-	depends on MMU && !M68K
+	depends on MMU
 	default n
 	---help---
 	  Binder is used in Android for both communication between processes,
@@ -55,14 +56,14 @@ config ANDROID_BINDER_IPC_SELFTEST
 
 config ANDROID_SIMPLE_LMK
 	bool "Simple Android Low Memory Killer"
-	depends on !ANDROID_LOW_MEMORY_KILLER && !MEMCG
+	depends on !ANDROID_LOW_MEMORY_KILLER && !MEMCG && !PSI
 	---help---
 	  This is a complete low memory killer solution for Android that is
 	  small and simple. Processes are killed according to the priorities
 	  that Android gives them, so that the least important processes are
 	  always killed first. Processes are killed until memory deficits are
-	  satisfied, as observed from kswapd struggling to free up pages. Simple
-	  LMK stops killing processes when kswapd finally goes back to sleep.
+	  satisfied, as observed from direct reclaim and kswapd reclaim
+	  struggling to free up pages, via VM pressure notifications.
 
 if ANDROID_SIMPLE_LMK
 
