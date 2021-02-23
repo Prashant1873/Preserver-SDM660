@@ -38,10 +38,6 @@ KERNEL_DIR=$PWD
 # The name of the Kernel, to name the ZIP
 KERNEL="ElectroPerf"
 
-# Kernel zip name type
-export LOCALVERSION="ElectroPerf"
-LOCALVERSION="ElectroPerf"
-
 # The name of the device for which the kernel is built
 MODEL="Asus Zenfone Max Pro M2"
 
@@ -122,7 +118,7 @@ DATE=$(TZ=Asia/Jakarta date +"%Y%m%d-%T")
 	fi
 
 	msg "|| Cloning Anykernel ||"
-	git clone --depth 1 https://github.com/Curious-To-Learn/AnyKernel3.git -b ElectroPerf
+        git clone https://github.com/Curious-To-Learn/AnyKernel13.git
 
 	if [ $BUILD_DTBO = 1 ]
 	then
@@ -227,12 +223,12 @@ build_kernel() {
 
 gen_zip() {
 	msg "|| Zipping into a flashable zip ||"
-	mv "$KERNEL_DIR"/out/arch/arm64/boot/Image.gz-dtb AnyKernel3/Image.gz-dtb
+	mv "$KERNEL_DIR"/out/arch/arm64/boot/Image.gz-dtb AnyKernel13/Image.gz-dtb
 	if [ $BUILD_DTBO = 1 ]
 	then
-		mv "$KERNEL_DIR"/out/arch/arm64/boot/dtbo.img AnyKernel3/dtbo.img
+		mv "$KERNEL_DIR"/out/arch/arm64/boot/dtbo.img AnyKernel13/dtbo.img
 	fi
-	cd AnyKernel3 || exit
+	cd AnyKernel13 || exit
 	zip -r9 "$ZIPNAME" * -x .git README.md
 
 	## Prepare a final zip variable
