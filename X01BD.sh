@@ -35,17 +35,11 @@ err() {
 # The defult directory where the kernel should be placed
 KERNEL_DIR=$PWD
 
-# The name of the Kernel, to name the ZIP
-KERNEL="ElectroPerf"
-
 # The name of the device for which the kernel is built
 MODEL="Asus Zenfone Max Pro M2"
 
 # The codename of the device
 DEVICE="X01BD"
-
-# Kernel revision
-KERNELTYPE=HMP
 
 # The defconfig which should be used. Get it from config.gz from
 # your device or check source
@@ -89,7 +83,6 @@ LOG_DEBUG=0
 
 #Check Kernel Version
 KERVER=$(make kernelversion)
-
 
 # Set a commit head
 COMMIT_HEAD=$(git log --oneline -1)
@@ -154,9 +147,9 @@ exports() {
 # Function to replace defconfig versioning
 setversioning() {
     # For staging branch
-    KERNELNAME="$KERNEL-$DEVICE-$LOCALVERSION-$DATE"
+    KERNELNAME="$LOCALVERSION-$DEVICE-$DATE-LA.UM.9.2.r1-02500-SDMxx0.0"
     # Export our new localversion and zipnames
-    export KERNELTYPE KERNELNAME
+    export KERNELNAME
     export ZIPNAME="$KERNELNAME.zip"
 }
 
