@@ -26,7 +26,6 @@ msg() {
 
 err() {
     echo -e "\e[1;41m$*\e[0m"
-    exit 1
 }
 
 ##------------------------------------------------------##
@@ -147,7 +146,7 @@ exports() {
 # Function to replace defconfig versioning
 setversioning() {
     # For staging branch
-    KERNELNAME="$LOCALVERSION-$DEVICE-$DATE-LA.UM.9.2.r1-02500-SDMxx0.0"
+    KERNELNAME="ElectroPerf-4.4.259-X01BD-LA.UM.9.2.r1-02500-SDMxx0.0"
     # Export our new localversion and zipnames
     export KERNELNAME
     export ZIPNAME="$KERNELNAME.zip"
@@ -201,7 +200,6 @@ build_kernel() {
 	elif ! [ -f $KERNEL_DIR/out/arch/arm64/boot/Image.gz-dtb ]
 	then
 		echo -e "Kernel compilation failed, See buildlog to fix errors"
-		exit 1
 	fi
 
 	if [ $BUILD_DTBO = 1 ]
@@ -222,7 +220,7 @@ gen_zip() {
 		mv "$KERNEL_DIR"/out/arch/arm64/boot/dtbo.img AnyKernel13/dtbo.img
 	fi
 	cd AnyKernel13 || exit
-	zip -r9 "$ZIPNAME" * -x .git README.md
+	zip -r9 "$ZIPNAME" * -x .git README.md *placeholder
 
 	## Prepare a final zip variable
 	ZIP_FINAL="$ZIPNAME"
