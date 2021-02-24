@@ -377,13 +377,13 @@ static int __init devfreq_boost_init(void)
 	for (i = 0; i < DEVFREQ_MAX; i++) {
 		struct boost_dev *b = d->devices + i;
 
-		b->wq = wq;
-		b->abs_min_freq = ULONG_MAX;
-		spin_lock_init(&b->lock);
-		INIT_WORK(&b->input_boost, devfreq_input_boost);
-		INIT_DELAYED_WORK(&b->input_unboost, devfreq_input_unboost);
-		INIT_WORK(&b->max_boost, devfreq_max_boost);
-		INIT_DELAYED_WORK(&b->max_unboost, devfreq_max_unboost);
+		thread[i] = kthread_run_perf_critical(devfreq_boost_thread, b,
+					"devfreq_boostd/%d", i);
+		if (IS_ERR(thread[i])) {
+			ret = PTR_ERR(thread[i]);
+			pr_err("Failed to create kthread, err: %d\n", ret);
+			goto stop_kthreads;
+		}
 	}
 
 	d->devices[DEVFREQ_MSM_CPUBW].boost_freq =
