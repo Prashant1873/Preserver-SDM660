@@ -53,7 +53,7 @@ COMPILER=clang
 	if [ $COMPILER = "clang" ]
 	then
 		# install few necessary packages
-		apt-get -y install llvm lld
+		sudo apt-get -y install llvm lld
 	fi
 
 # Clean source prior building. 1 is NO(default) | 0 is YES
@@ -86,8 +86,8 @@ KERVER=$(make kernelversion)
 # Set a commit head
 COMMIT_HEAD=$(git log --oneline -1)
 
-# Set Date 
-DATE=$(TZ=Asia/Jakarta date +"%Y%m%d-%T")
+# Set Date
+DATE=$(TZ=Asia/Kolkata date +"%Y%m%d")
 
 #Now Its time for other stuffs like cloning, exporting, etc
 
@@ -110,7 +110,7 @@ DATE=$(TZ=Asia/Jakarta date +"%Y%m%d-%T")
 	fi
 
 	msg "|| Cloning Anykernel ||"
-        git clone https://github.com/Curious-To-Learn/AnyKernel13.git
+        git clone https://github.com/ElectroPerf/AnyKernel3.git
 
 	if [ $BUILD_DTBO = 1 ]
 	then
@@ -122,7 +122,7 @@ DATE=$(TZ=Asia/Jakarta date +"%Y%m%d-%T")
 ##------------------------------------------------------##
 
 exports() {
-	export KBUILD_BUILD_USER="Curious-To-Learn"
+	export KBUILD_BUILD_USER="ElectroPerf"
 	export ARCH=arm64
 	export SUBARCH=arm64
 
@@ -146,7 +146,7 @@ exports() {
 # Function to replace defconfig versioning
 setversioning() {
     # For staging branch
-    KERNELNAME="ElectroPerf-4.4.259-X01BD-LA.UM.9.2.r1-02500-SDMxx0.0"
+    KERNELNAME="ElectroPerf-4.4.259-R-WIFI-X01BD-LA.UM.9.2.r1-02500-SDMxx0.0-$DATE"
     # Export our new localversion and zipnames
     export KERNELNAME
     export ZIPNAME="$KERNELNAME.zip"
@@ -214,13 +214,14 @@ build_kernel() {
 
 gen_zip() {
 	msg "|| Zipping into a flashable zip ||"
-	mv "$KERNEL_DIR"/out/arch/arm64/boot/Image.gz-dtb AnyKernel13/Image.gz-dtb
+	mv "$KERNEL_DIR"/out/arch/arm64/boot/Image.gz-dtb AnyKernel3/Image.gz-dtb
 	if [ $BUILD_DTBO = 1 ]
 	then
-		mv "$KERNEL_DIR"/out/arch/arm64/boot/dtbo.img AnyKernel13/dtbo.img
+		mv "$KERNEL_DIR"/out/arch/arm64/boot/dtbo.img AnyKernel3/dtbo.img
 	fi
-	cd AnyKernel13 || exit
-	zip -r9 "$ZIPNAME" * -x .git README.md *placeholder
+	cd AnyKernel3 || exit
+        cp -af anykernel-real.sh anykernel.sh
+	zip -r9 "$ZIPNAME" * -x .git README.md anykernel-real.sh .gitignore *.zip
 
 	## Prepare a final zip variable
 	ZIP_FINAL="$ZIPNAME"
