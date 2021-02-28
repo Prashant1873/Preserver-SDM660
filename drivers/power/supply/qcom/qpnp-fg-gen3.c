@@ -2944,11 +2944,8 @@ out:
 
 static int fg_get_cycle_count(struct fg_chip *chip)
 {
-#ifdef CONFIG_MACH_MI
-	int count = 0, i = 0;
-#else
-	int count;
-#endif
+	int count = 0;
+	int i = 0;
 
 	if (!chip->cyc_ctr.en)
 		return 0;
@@ -2957,18 +2954,13 @@ static int fg_get_cycle_count(struct fg_chip *chip)
 		return -EINVAL;
 
 	mutex_lock(&chip->cyc_ctr.lock);
-#ifdef CONFIG_MACH_MI
 	for (i = 0; i < BUCKET_COUNT; i++)
 		count += chip->cyc_ctr.count[i];
 	count /= BUCKET_COUNT;
-#else
-	count = chip->cyc_ctr.count[chip->cyc_ctr.id - 1];
-#endif
 	mutex_unlock(&chip->cyc_ctr.lock);
 	return count;
 }
 
-#ifdef CONFIG_MACH_MI
 static int fg_set_cycle_count(struct fg_chip *chip, int value)
 {
 	int rc = 0;
@@ -2990,7 +2982,6 @@ static int fg_set_cycle_count(struct fg_chip *chip, int value)
 	}
 	return rc;
 }
-#endif
 
 static void status_change_work(struct work_struct *work)
 {
@@ -4330,13 +4321,11 @@ static int fg_psy_set_property(struct power_supply *psy,
 			return -EINVAL;
 		}
 		break;
-#ifdef CONFIG_MACH_MI
 	case POWER_SUPPLY_PROP_CYCLE_COUNT:
 		rc = fg_set_cycle_count(chip, pval->intval);
 		pr_info("Cycle count is modified to %d by userspace\n",
 				pval->intval);
 		break;
-#endif
 	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE:
 		rc = fg_set_constant_chg_voltage(chip, pval->intval);
 		break;
@@ -4429,9 +4418,7 @@ static int fg_property_is_writeable(struct power_supply *psy,
 {
 	switch (psp) {
 	case POWER_SUPPLY_PROP_CYCLE_COUNT_ID:
-#ifdef CONFIG_MACH_MI
 	case POWER_SUPPLY_PROP_CYCLE_COUNT:
-#endif
 	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE:
 	case POWER_SUPPLY_PROP_CC_STEP:
 	case POWER_SUPPLY_PROP_CC_STEP_SEL:
