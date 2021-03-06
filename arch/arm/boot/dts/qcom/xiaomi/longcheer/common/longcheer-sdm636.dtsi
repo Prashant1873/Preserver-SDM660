@@ -93,10 +93,10 @@
 };
 
 &pm660_haptics {
-	/delete-property/ qcom,correct-lra-drive-freq;
+	compatible = "qcom,qpnp-haptic";
 	qcom,actuator-type = "erm";
-	qcom,play-mode = "direct";
 	qcom,vmax-mv = <3000>;
+	qcom,play-mode = "direct";
 	qcom,ilim-ma = <800>;
 	qcom,wave-shape = "square";
 	qcom,wave-play-rate-us = <6667>;
