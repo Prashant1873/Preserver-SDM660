@@ -96,11 +96,6 @@ endchoice
 config DEFAULT_IOSCHED
 	string
 	default "deadline" if DEFAULT_DEADLINE
-<<<<<<< HEAD
-=======
-	default "depression" if DEFAULT_DEPRESSION
-	default "tripndroid" if DEFAULT_TRIPNDROID
->>>>>>> b6db96bffea0... block: Add tripndroid and anxiety iosched
 	default "cfq" if DEFAULT_CFQ
 	default "anxiety" if DEFAULT_ANXIETY
 	default "noop" if DEFAULT_NOOP
