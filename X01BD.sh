@@ -110,7 +110,7 @@ DATE=$(TZ=Asia/Kolkata date +"%Y%m%d")
 	fi
 
 	msg "|| Cloning Anykernel ||"
-        git clone https://github.com/ElectroPerf/AnyKernel3.git
+        git clone https://github.com/ElectroPerf/AnyKernel3.git -b ElectroPerf-P-Wifi
 
 	if [ $BUILD_DTBO = 1 ]
 	then
