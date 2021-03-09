@@ -668,6 +668,14 @@ static int sugov_init(struct cpufreq_policy *policy)
 		goto stop_kthread;
 	}
 
+    /*
+	 * NOTE:
+	 * intializing up_rate/down_rate to 0 explicitly in kernel
+	 * since WALT expects so by default.
+	 */
+	tunables->up_rate_limit_us = 0;
+	tunables->down_rate_limit_us = 0;
+
 	if (policy->up_transition_delay_us && policy->down_transition_delay_us) {
 		tunables->up_rate_limit_us = policy->up_transition_delay_us;
 		tunables->down_rate_limit_us = policy->down_transition_delay_us;
