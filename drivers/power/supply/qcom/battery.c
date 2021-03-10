@@ -152,6 +152,7 @@ static void split_settled(struct pl_data *chip)
 		slave_icl_pct = max(0, chip->slave_pct);
 #else
 		slave_icl_pct = max(0, chip->slave_pct - 10);
+#endif
 		slave_ua = ((main_settled_ua + chip->pl_settled_ua)
 						* slave_icl_pct) / 100;
 		total_settled_ua = main_settled_ua + chip->pl_settled_ua;
