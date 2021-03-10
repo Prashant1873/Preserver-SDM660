@@ -146,27 +146,25 @@ static struct jeita_fcc_cfg jeita_fcc_config = {
 #elif defined(CONFIG_MACH_XIAOMI_TULIP)
 		{0,		50,		400000},
 		{51,		150,		1200000},
-		{151,		400,		2500000},
-		{401,		430,		2000000},
-		{431,		450,		1500000},
-		{451,		470,		1000000},
-		{471,		600,		 600000},
-	},
-};
-#elif defined(CONFIG_KERNEL_CUSTOM_E7T)
-static struct jeita_fcc_cfg jeita_fcc_config = {
-	.psy_prop	= POWER_SUPPLY_PROP_TEMP,
-	.prop_name	= "BATT_TEMP",
-	.hysteresis	= 0, /* 1degC hysteresis */
-	.fcc_cfg	= {
-		/* TEMP_LOW	TEMP_HIGH	FCC */
-		{0,			50,			 400000},
-		{51,		150,		1200000},
-		{151,		400,		2500000},
-		{401,		430,		2000000},
-		{431,		450,		1500000},
-		{451,		470,		1000000},
-		{471,		600,		 600000},
+		{151,		450,		2500000},
+		{451,		600,		2000000},
+#elif defined(CONFIG_MACH_MI)
+		{0,		50,		325000},
+		{51,		100,		1000000},
+		{101,		150,		1000000},
+		{151,		450,		3300000},
+		{451,		580,		1700000},
+#elif defined(CONFIG_MACH_XIAOMI_CLOVER)
+		{0,		50,		600000},
+		{51,		150,		900000},
+		{151,		450,		2000000},
+		{451,		600,		1000000},
+#else
+		{0,		100,		600000},
+		{101,		200,		2000000},
+		{201,		450,		3000000},
+		{451,		550,		600000},
+#endif
 	},
 };
 
