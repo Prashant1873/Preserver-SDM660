@@ -163,13 +163,12 @@ hdd_get_sta_policy[QCA_WLAN_VENDOR_ATTR_GET_STA_INFO_MAX + 1] = {
 static int hdd_get_sta_congestion(struct hdd_adapter *adapter,
 				  uint32_t *congestion)
 {
-	struct cca_stats cca_stats;
-#if defined(CONFIG_CP_STATS)
 	QDF_STATUS status;
+	struct cca_stats cca_stats;
+
 	status = ucfg_mc_cp_stats_cca_stats_get(adapter->vdev, &cca_stats);
 	if (QDF_IS_STATUS_ERROR(status))
 		return -EINVAL;
-#endif
 
 	*congestion = cca_stats.congestion;
 	return 0;
