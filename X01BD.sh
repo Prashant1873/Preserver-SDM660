@@ -220,6 +220,7 @@ gen_zip() {
 		mv "$KERNEL_DIR"/out/arch/arm64/boot/dtbo.img AnyKernel3/dtbo.img
 	fi
 	cd AnyKernel3 || exit
+	cp -af "$KERNEL_DIR"/kunmun.sh init.spectrum.rc && sed -i "s/persist.spectrum.kernel.*/persist.spectrum.kernel $KName/g" init.spectrum.rc
         cp -af anykernel-real.sh anykernel.sh
 	zip -r9 "$ZIPNAME" * -x .git README.md anykernel-real.sh .gitignore *.zip
 
