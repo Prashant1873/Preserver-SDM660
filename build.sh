@@ -1,12 +1,12 @@
 #!/bin/bash
 
-export KERNELNAME=Moonlight
+export KERNELNAME=GAME YOUR KNTL🎃
 
-export LOCALVERSION=Xtreme-Electro-x1.2
+export LOCALVERSION=
 
-export KBUILD_BUILD_USER=frost
+export KBUILD_BUILD_USER=Builder
 
-export KBUILD_BUILD_HOST=otaku
+export KBUILD_BUILD_HOST=Athaya
 
 export TOOLCHAIN=clang
 
