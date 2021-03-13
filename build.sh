@@ -2,7 +2,7 @@
 
 export KERNELNAME=UNubSarGang
 
-export LOCALVERSION=
+export LOCALVERSION=X2.9
 
 export KBUILD_BUILD_USER=unubsar
 
