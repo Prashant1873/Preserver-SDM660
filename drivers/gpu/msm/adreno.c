@@ -746,7 +746,7 @@ static int adreno_of_get_power(struct adreno_device *adreno_dev,
 	/* get pm-qos-active-latency, set it to default if not found */
 	if (of_property_read_u32(node, "qcom,pm-qos-active-latency",
 		&device->pwrctrl.pm_qos_active_latency))
-		device->pwrctrl.pm_qos_active_latency = 501;
+		device->pwrctrl.pm_qos_active_latency = 1000;
 
 	/* get pm-qos-cpu-mask-latency, set it to default if not found */
 	if (of_property_read_u32(node, "qcom,l2pc-cpu-mask-latency",
@@ -1167,7 +1167,7 @@ static int _adreno_start(struct adreno_device *adreno_dev)
 	unsigned int pmqos_active_vote = device->pwrctrl.pm_qos_active_latency;
 
 	/* make sure ADRENO_DEVICE_STARTED is not set here */
-	WARN_ON(test_bit(ADRENO_DEVICE_STARTED, &adreno_dev->priv));
+	BUG_ON(test_bit(ADRENO_DEVICE_STARTED, &adreno_dev->priv));
 
 	/* disallow l2pc during wake up to improve GPU wake up time */
 	kgsl_pwrctrl_update_l2pc(&adreno_dev->dev,
