@@ -34,14 +34,6 @@ send_msg(){
 	print "${1}" green
 	curl -s -X POST https://api.telegram.org/bot"${bot_token}"/sendMessage \
 		-d parse_mode="Markdown" \
-		-d chat_id="${GROUP_ID}" \
-		-d text="${1}"
-}
-
-send_pesan(){
-	print "${1}" green
-	curl -s -X POST https://api.telegram.org/bot"${bot_token}"/sendMessage \
-		-d parse_mode="Markdown" \
 		-d chat_id="${chat_id}" \
 		-d text="${1}"
 }
@@ -65,7 +57,6 @@ mkzip(){
 		send_file $1
 	else
 		send_msg "❌ Build error!"
-		send_pesan "❌ Build error!"
 		print "❌ Build error!" red
 		exit 1
 	fi
@@ -93,7 +84,7 @@ gen_toolchain(){
 		git clone --depth=1 https://github.com/chips-project/aarch64-elf gcc64
 		git clone --depth=1 https://github.com/chips-project/arm-eabi gcc32
 	fi
-	git clone --depth=1 https://github.com/frostid/AnyKernel3 -b xiaomi anykernel
+	git clone --depth=1 https://github.com/frostid/AnyKernel3 -b unubsar anykernel
 }
 
 build(){
