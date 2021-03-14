@@ -20,9 +20,7 @@ source helper
 
 gen_toolchain
 
-send_msg "⏳ Start building ${KERNELNAME} ${LOCALVERSION} | DEVICES: whyred - tulip - lavender - wayne - jasmine"
-
-send_pesan "⏳ Start building ${KERNELNAME} ${LOCALVERSION} | DEVICES: whyred - tulip - lavender - wayne - jasmine"
+send_msg "⏳ Start building ${KERNELNAME} ${LOCALVERSION}..."
 
 START=$(date +"%s")
 
@@ -33,13 +31,9 @@ do
 	build ${i} -newcam
 done
 
-send_msg "⏳ Start building Overclock version | DEVICES: whyred - tulip"
-
-send_pesan "⏳ Start building Overclock version | DEVICES: whyred - tulip"
+send_msg "⏳ Start building Overclock version..."
 
 git apply oc.patch
-
-git apply em.patch
 
 for i in ${DEVICES//,/ }
 do
@@ -55,6 +49,4 @@ END=$(date +"%s")
 
 DIFF=$(( END - START ))
 
-send_msg "✅ Build completed in $((DIFF / 60))m $((DIFF % 60))s, get nightly builds in @MoonlightCI | Linux version : $(make kernelversion) | Last commit: $(git log --pretty=format:'%s' -5)"
-
-send_pesan "✅ Build completed in $((DIFF / 60))m $((DIFF % 60))s | Linux version : $(make kernelversion) | Last commit: $(git log --pretty=format:'%s' -5)"
+send_msg "✅ Build completed in $((DIFF / 60))m $((DIFF % 60))s | Linux version : $(make kernelversion) | Last commit: $(git log --pretty=format:'%s' -5)"
