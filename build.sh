@@ -2,9 +2,9 @@
 
 export KERNELNAME=Moonlight
 
-export LOCALVERSION=Hikari-v1.9
+export LOCALVERSION=Enbu-v2.3-TEST
 
-export KBUILD_BUILD_USER=frost
+export KBUILD_BUILD_USER=frost_id
 
 export KBUILD_BUILD_HOST=otaku
 
