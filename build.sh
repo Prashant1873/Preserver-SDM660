@@ -10,7 +10,7 @@ export KBUILD_BUILD_HOST=family
 
 export TOOLCHAIN=clang
 
-export DEVICES=whyred
+export DEVICES=whyred,a26x
 
 export CI_ID=-1001463706805
 
