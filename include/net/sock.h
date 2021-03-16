@@ -416,6 +416,7 @@ struct sock {
 	int			sk_gso_type;
 	unsigned int		sk_gso_max_size;
 	u16			sk_gso_max_segs;
+	int			sk_rcvlowat;
 	u8			sk_pacing_shift;
 	unsigned long	        sk_lingertime;
 	struct sk_buff_head	sk_error_queue;
