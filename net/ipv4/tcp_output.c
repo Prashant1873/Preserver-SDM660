@@ -1567,7 +1567,7 @@ static u32 tcp_tso_autosize(const struct sock *sk, unsigned int mss_now)
 {
 	u32 bytes, segs;
 
-	bytes = min(sk->sk_pacing_rate >> sk->sk_pacing_shift,
+	bytes = min(sk->sk_pacing_rate >> 10,
 		    sk->sk_gso_max_size - 1 - MAX_TCP_HEADER);
 
 	/* Goal is to send at least one packet per ms,
@@ -2037,95 +2037,6 @@ static int tcp_mtu_probe(struct sock *sk)
 	}
 
 	return -1;
-}
-
-static bool tcp_pacing_check(const struct sock *sk)
-{
-	return tcp_needs_internal_pacing(sk) &&
-	       hrtimer_active(&tcp_sk(sk)->pacing_timer);
-}
-
-/* TCP Small Queues :
- * Control number of packets in qdisc/devices to two packets / or ~1 ms.
- * (These limits are doubled for retransmits)
- * This allows for :
- *  - better RTT estimation and ACK scheduling
- *  - faster recovery
- *  - high rates
- * Alas, some drivers / subsystems require a fair amount
- * of queued bytes to ensure line rate.
- * One example is wifi aggregation (802.11 AMPDU)
- */
-static bool tcp_small_queue_check(struct sock *sk, const struct sk_buff *skb,
-				  unsigned int factor)
-{
-	unsigned int limit;
-
-	limit = max(2 * skb->truesize, sk->sk_pacing_rate >> sk->sk_pacing_shift);
-	limit = min_t(u32, limit, sysctl_tcp_limit_output_bytes);
-	limit <<= factor;
-
-	if (atomic_read(&sk->sk_wmem_alloc) > limit) {
-		/* Always send the 1st or 2nd skb in write queue.
-		 * No need to wait for TX completion to call us back,
-		 * after softirq/tasklet schedule.
-		 * This helps when TX completions are delayed too much.
-		 */
-		if (skb == sk->sk_write_queue.next ||
-		    skb->prev == sk->sk_write_queue.next)
-			return false;
-
-		set_bit(TSQ_THROTTLED, &sk->sk_tsq_flags);
-		/* It is possible TX completion already happened
-		 * before we set TSQ_THROTTLED, so we must
-		 * test again the condition.
-		 */
-		smp_mb__after_atomic();
-		if (atomic_read(&sk->sk_wmem_alloc) > limit)
-			return true;
-	}
-	return false;
-}
-
-static void tcp_chrono_set(struct tcp_sock *tp, const enum tcp_chrono new)
-{
-	const u32 now = tcp_jiffies32;
-
-	if (tp->chrono_type > TCP_CHRONO_UNSPEC)
-		tp->chrono_stat[tp->chrono_type - 1] += now - tp->chrono_start;
-	tp->chrono_start = now;
-	tp->chrono_type = new;
-}
-
-void tcp_chrono_start(struct sock *sk, const enum tcp_chrono type)
-{
-	struct tcp_sock *tp = tcp_sk(sk);
-
-	/* If there are multiple conditions worthy of tracking in a
-	 * chronograph then the highest priority enum takes precedence
-	 * over the other conditions. So that if something "more interesting"
-	 * starts happening, stop the previous chrono and start a new one.
-	 */
-	if (type > tp->chrono_type)
-		tcp_chrono_set(tp, type);
-}
-
-void tcp_chrono_stop(struct sock *sk, const enum tcp_chrono type)
-{
-	struct tcp_sock *tp = tcp_sk(sk);
-
-
-	/* There are multiple conditions worthy of tracking in a
-	 * chronograph, so that the highest priority enum takes
-	 * precedence over the other conditions (see tcp_chrono_start).
-	 * If a condition stops, we only stop chrono tracking if
-	 * it's the "most interesting" or current chrono we are
-	 * tracking and starts busy chrono if we have pending data.
-	 */
-	if (tcp_write_queue_empty(sk))
-		tcp_chrono_set(tp, TCP_CHRONO_UNSPEC);
-	else if (type == tp->chrono_type)
-		tcp_chrono_set(tp, TCP_CHRONO_BUSY);
 }
 
 /* This routine writes packets to the network.  It advances the
