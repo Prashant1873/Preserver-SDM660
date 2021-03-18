@@ -28,7 +28,7 @@ unsigned long boosted_cpu_util(int cpu);
 #define cpufreq_driver_fast_switch(x, y) 0
 #define cpufreq_enable_fast_switch(x)
 #define cpufreq_disable_fast_switch(x)
-#define UP_RATE_LIMIT_US			(500)
+#define UP_RATE_LIMIT_US			(10000)
 #define DOWN_RATE_LIMIT_US			(20000)
 
 static unsigned int default_efficient_freq_lp[] = {1113600, 1401600, 1536000, 1747200};
@@ -41,8 +41,8 @@ struct sugov_tunables {
 	struct gov_attr_set attr_set;
 	unsigned int up_rate_limit_us;
 	unsigned int down_rate_limit_us;
-	bool iowait_boost_enable;
 	unsigned int *efficient_freq;
+	bool iowait_boost_enable;
 	int nefficient_freq;
 	unsigned int *up_delay;
 	int nup_delay;
@@ -946,7 +946,6 @@ static int sugov_init(struct cpufreq_policy *policy)
                 }
 	}
 
-	tunables->iowait_boost_enable = policy->iowait_boost_enable;
 
 	policy->governor_data = sg_policy;
 	sg_policy->tunables = tunables;
