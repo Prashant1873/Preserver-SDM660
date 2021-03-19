@@ -684,18 +684,12 @@ KBUILD_CFLAGS	+= $(call cc-disable-warning, int-in-bool-context)
 KBUILD_CFLAGS	+= $(call cc-disable-warning, address-of-packed-member)
 KBUILD_CFLAGS	+= $(call cc-disable-warning, attribute-alias)
 
-<<<<<<< HEAD
 ## hide "error: cast to smaller integer type 'eSapStatus' from 'void *' "
 KBUILD_CFLAGS	+= $(call cc-disable-warning, pointer-to-int-cast)
 
 ## hide "warning: integer-overflow in expression"
 KBUILD_CFLAGS	+= $(call cc-disable-warning, integer-overflow)
 
-=======
-ifdef CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE
-KBUILD_CFLAGS	+= -O3
-else
->>>>>>> c7aae280874c... Makefile: Add polly mcpu and a few more flags
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= -Os
 else
@@ -1724,7 +1718,7 @@ export_report:
 	$(PERL) $(srctree)/scripts/export_report.pl
 
 endif #ifeq ($(config-targets),1)
-endif #ifeq ($(mixed-targets),1)
+
 
 PHONY += checkstack kernelrelease kernelversion image_name
 
