@@ -32,10 +32,10 @@ unsigned long boosted_cpu_util(int cpu);
 #define DOWN_RATE_LIMIT_US			(20000)
 
 static unsigned int default_efficient_freq_lp[] = {1401600, 1747200};
-static unsigned int default_up_delay_lp[] = {300,4000};
+static unsigned int default_up_delay_lp[] = {600, 3000};
 
 static unsigned int default_efficient_freq_hp[] = {1401600, 1747200, 1958400};
-static unsigned int default_up_delay_hp[] = {500, 1500, 5000};
+static unsigned int default_up_delay_hp[] = {600, 1500, 3000};
 
 struct sugov_tunables {
 	struct gov_attr_set attr_set;
