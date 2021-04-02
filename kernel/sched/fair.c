@@ -106,7 +106,7 @@ unsigned int __read_mostly sysctl_sched_energy_aware = 1;
 unsigned int sysctl_sched_wakeup_granularity = 5000000UL;
 unsigned int normalized_sysctl_sched_wakeup_granularity = 5000000UL;
 
-const_debug unsigned int sysctl_sched_migration_cost = 5000000UL;
+const_debug unsigned int sysctl_sched_migration_cost = 400000UL;
 
 /*
  * The exponential sliding  window over which load is averaged for shares
@@ -5516,10 +5516,6 @@ struct energy_env {
 	 * the specified energy_env::task
 	 */
 	int			next_idx;
-static inline bool energy_aware(void)
-{
-	return sysctl_sched_energy_aware;
-}
 
 	/* Support data */
 	struct sched_group	*sg_top;
