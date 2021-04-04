@@ -709,7 +709,10 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 if (!strcmp(css->cgroup->kn->name, "top-app"))
 		boost = 0;
 
-	if (boost < -100 || boost > 100)
+if (!strcmp(css->cgroup->kn->name, "background"))
+		boost = -10;
+
+if (boost < -100 || boost > 100)
 		return -EINVAL;
 	boost_pct = boost;
 
