@@ -662,36 +662,126 @@ TRACE_EVENT(sched_wake_idle_without_ipi,
 	TP_printk("cpu=%d", __entry->cpu)
 );
 
-TRACE_EVENT(sched_preempt_disable,
+TRACE_EVENT(sched_get_nr_running_avg,
 
-	TP_PROTO(u64 delta, bool irqs_disabled,
-			unsigned long caddr0, unsigned long caddr1,
-			unsigned long caddr2, unsigned long caddr3),
+	TP_PROTO(int avg, int big_avg, int iowait_avg,
+		 unsigned int max_nr, unsigned int big_max_nr),
 
-	TP_ARGS(delta, irqs_disabled, caddr0, caddr1, caddr2, caddr3),
+	TP_ARGS(avg, big_avg, iowait_avg, max_nr, big_max_nr),
 
 	TP_STRUCT__entry(
-		__field(u64, delta)
-		__field(bool, irqs_disabled)
-		__field(void*, caddr0)
-		__field(void*, caddr1)
-		__field(void*, caddr2)
-		__field(void*, caddr3)
+		__field( int,	avg			)
+		__field( int,	big_avg			)
+		__field( int,	iowait_avg		)
+		__field( unsigned int,	max_nr		)
+		__field( unsigned int,	big_max_nr	)
 	),
 
 	TP_fast_assign(
-		__entry->delta = delta;
-		__entry->irqs_disabled = irqs_disabled;
-		__entry->caddr0 = (void *)caddr0;
-		__entry->caddr1 = (void *)caddr1;
-		__entry->caddr2 = (void *)caddr2;
-		__entry->caddr3 = (void *)caddr3;
+		__entry->avg		= avg;
+		__entry->big_avg	= big_avg;
+		__entry->iowait_avg	= iowait_avg;
+		__entry->max_nr		= max_nr;
+		__entry->big_max_nr	= big_max_nr;
 	),
 
-	TP_printk("delta=%llu(ns) irqs_d=%d Callers:(%pf<-%pf<-%pf<-%pf)",
-				__entry->delta, __entry->irqs_disabled,
-				__entry->caddr0, __entry->caddr1,
-				__entry->caddr2, __entry->caddr3)
+	TP_printk("avg=%d big_avg=%d iowait_avg=%d max_nr=%u big_max_nr=%u",
+		__entry->avg, __entry->big_avg, __entry->iowait_avg,
+		__entry->max_nr, __entry->big_max_nr)
+);
+
+TRACE_EVENT(core_ctl_eval_need,
+
+	TP_PROTO(unsigned int cpu, unsigned int old_need,
+		 unsigned int new_need, unsigned int updated),
+	TP_ARGS(cpu, old_need, new_need, updated),
+	TP_STRUCT__entry(
+		__field(u32, cpu)
+		__field(u32, old_need)
+		__field(u32, new_need)
+		__field(u32, updated)
+	),
+	TP_fast_assign(
+		__entry->cpu = cpu;
+		__entry->old_need = old_need;
+		__entry->new_need = new_need;
+		__entry->updated = updated;
+	),
+	TP_printk("cpu=%u, old_need=%u, new_need=%u, updated=%u", __entry->cpu,
+		  __entry->old_need, __entry->new_need, __entry->updated)
+);
+
+TRACE_EVENT(core_ctl_set_busy,
+
+	TP_PROTO(unsigned int cpu, unsigned int busy,
+		 unsigned int old_is_busy, unsigned int is_busy),
+	TP_ARGS(cpu, busy, old_is_busy, is_busy),
+	TP_STRUCT__entry(
+		__field(u32, cpu)
+		__field(u32, busy)
+		__field(u32, old_is_busy)
+		__field(u32, is_busy)
+	),
+	TP_fast_assign(
+		__entry->cpu = cpu;
+		__entry->busy = busy;
+		__entry->old_is_busy = old_is_busy;
+		__entry->is_busy = is_busy;
+	),
+	TP_printk("cpu=%u, busy=%u, old_is_busy=%u, new_is_busy=%u",
+		  __entry->cpu, __entry->busy, __entry->old_is_busy,
+		  __entry->is_busy)
+);
+
+TRACE_EVENT(core_ctl_set_boost,
+
+	TP_PROTO(u32 refcount, s32 ret),
+	TP_ARGS(refcount, ret),
+	TP_STRUCT__entry(
+		__field(u32, refcount)
+		__field(s32, ret)
+	),
+	TP_fast_assign(
+		__entry->refcount = refcount;
+		__entry->ret = ret;
+	),
+	TP_printk("refcount=%u, ret=%d", __entry->refcount, __entry->ret)
+);
+
+/**
+ * sched_isolate - called when cores are isolated/unisolated
+ *
+ * @acutal_mask: mask of cores actually isolated/unisolated
+ * @req_mask: mask of cores requested isolated/unisolated
+ * @online_mask: cpu online mask
+ * @time: amount of time in us it took to isolate/unisolate
+ * @isolate: 1 if isolating, 0 if unisolating
+ *
+ */
+TRACE_EVENT(sched_isolate,
+
+	TP_PROTO(unsigned int requested_cpu, unsigned int isolated_cpus,
+		 u64 start_time, unsigned char isolate),
+
+	TP_ARGS(requested_cpu, isolated_cpus, start_time, isolate),
+
+	TP_STRUCT__entry(
+		__field(u32, requested_cpu)
+		__field(u32, isolated_cpus)
+		__field(u32, time)
+		__field(unsigned char, isolate)
+	),
+
+	TP_fast_assign(
+		__entry->requested_cpu = requested_cpu;
+		__entry->isolated_cpus = isolated_cpus;
+		__entry->time = div64_u64(sched_clock() - start_time, 1000);
+		__entry->isolate = isolate;
+	),
+
+	TP_printk("iso cpu=%u cpus=0x%x time=%u us isolated=%d",
+		  __entry->requested_cpu, __entry->isolated_cpus,
+		  __entry->time, __entry->isolate)
 );
 
 TRACE_EVENT(sched_contrib_scale_f,
