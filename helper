@@ -55,7 +55,7 @@ mkzip(){
 	if [ -f $(pwd)/out/arch/arm64/boot/Image.gz-dtb ]; then
 		cp $(pwd)/out/arch/arm64/boot/Image.gz-dtb  Anykerne-3
 		cd Anykerne-3
-		zip -r9 ../allbuilds/$1 * -x .git README.md *placeholder
+		zip -r9 ../$1 * -x .git README.md *placeholder
 		cd ..
 		print "Hogaya build ab nacho" green
 	else
