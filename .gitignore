@@ -1,13 +1,13 @@
 #
-# NOTE! Don't add files that are generated in specific
-# subdirectories here. Add them in the ".gitignore" file
-# in that subdirectory instead.
+#NOTE!Don'taddfilesthataregeneratedinspecific
+#subdirectorieshere.Addtheminthe".gitignore"file
+#inthatsubdirectoryinstead.
 #
-# NOTE! Please use 'git ls-files -i --exclude-standard'
-# command after changing this file, to see if there are
-# any tracked files which get ignored after the change.
+#NOTE!Pleaseuse'gitls-files-i--exclude-standard'
+#commandafterchangingthisfile,toseeifthereare
+#anytrackedfileswhichgetignoredafterthechange.
 #
-# Normal rules
+#Normalrules
 #
 .*
 *.o
@@ -40,7 +40,7 @@ Module.symvers
 *.su
 
 #
-# Top-level generic files
+#Top-levelgenericfiles
 #
 /tags
 /TAGS
@@ -53,46 +53,46 @@ Module.symvers
 /Module.markers
 
 #
-# Debian directory (make deb-pkg)
+#Debiandirectory(makedeb-pkg)
 #
 /debian/
 
 #
-# tar directory (make tar*-pkg)
+#tardirectory(maketar*-pkg)
 #
 /tar-install/
 
 #
-# git files that we don't want to ignore even it they are dot-files
+#gitfilesthatwedon'twanttoignoreevenittheyaredot-files
 #
 !.gitignore
 !.mailmap
 
 #
-# Generated include files
+#Generatedincludefiles
 #
 include/config
 include/generated
 arch/*/include/generated
 
-# stgit generated dirs
+#stgitgenerateddirs
 patches-*
 
-# quilt's files
+#quilt'sfiles
 patches
 series
 
-# cscope files
+#cscopefiles
 cscope.*
 ncscope.*
 
-# gnu global files
+#gnuglobalfiles
 GPATH
 GRTAGS
 GSYMS
 GTAGS
 
-# id-utils files
+#id-utilsfiles
 ID
 
 *.orig
@@ -100,7 +100,7 @@ ID
 \#*#
 
 #
-# Leavings from module signing
+#Leavingsfrommodulesigning
 #
 extra_certificates
 signing_key.pem
@@ -108,16 +108,49 @@ signing_key.priv
 signing_key.x509
 x509.genkey
 
-# Kconfig presets
+#Kconfigpresets
 all.config
 
-# Kdevelop4
+#Kdevelop4
 *.kdev4
 
-# fetched Android config fragments
+#fetchedAndroidconfigfragments
 android/configs/android-*.cfg
 
 #
-#Ignoring Android.bp link file
+#IgnoringAndroid.bplinkfile
 #
 Android.bp
+
+#mine
+Alyssa-WALT-wayne-Kernel-20210408-2008.zip
+Alyssa-wayne-CAF-EM-20210403-2100.zip
+Alyssa-wayne-Drac0-20210405-1616.zip
+Alyssa-wayne-FedShat-20210404-1608.zip
+Alyssa-wayne-Hype-20210405-1702.zip
+Alyssa-wayne-Kdrag0n-20210403-2245.zip
+Alyssa-wayne-Kernel-20210331-0212.zip
+Alyssa-wayne-Kernel-20210331-1656.zip
+Alyssa-wayne-Kernel-20210402-1318.zip
+Alyssa-wayne-Kernel-20210402-1403.zip
+Alyssa-wayne-Kernel-20210402-1515.zip
+Alyssa-wayne-Kernel-20210402-1842.zip
+Alyssa-wayne-Kernel-20210405-1736.zip
+Alyssa-wayne-Kernel-20210405-1830.zip
+Alyssa-wayne-Kernel-20210406-2143.zip
+Alyssa-wayne-Kernel-20210407-2101.zip
+Alyssa-wayne-Kernel-20210407-2211.zip
+Alyssa-wayne-Kernel-20210409-1314.zip
+Alyssa-wayne-Kernel-20210409-1353.zip
+Alyssa-wayne-Kernel-20210411-2008.zip
+Alyssa-wayne-Kernel-20210411-2135.zip
+Alyssa-wayne-NOSTUNE-20210405-2200.zip
+Alyssa-wayne_miui-Kernel-20210331-1458.zip
+Anykerne-3/
+anykernel/
+clang/
+defconfig
+gcc32/
+gcc64/
+jasminewayne.zip
+out/
