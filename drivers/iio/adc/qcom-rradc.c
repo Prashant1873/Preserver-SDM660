@@ -779,7 +779,15 @@ static int rradc_check_status_ready_with_retry(struct rradc_chip *chip,
 			break;
 		}
 
+<<<<<<< HEAD
 		msleep(FG_RR_CONV_CONTINUOUS_TIME_MIN_MS);
+=======
+		if ((chip->conv_cbk) && (prop->channel == RR_ADC_USBIN_V))
+			msleep(FG_RR_CONV_CONT_CBK_TIME_MIN_MS);
+		else
+			msleep(FG_RR_CONV_CONTINUOUS_TIME_MIN_MS);
+
+>>>>>>> parent of c07b2dc27b360... qcacld-3.0: Nuke as much debug bloat as possible
 		retry_cnt++;
 		rc = rradc_read(chip, status, buf, 1);
 		if (rc < 0) {
