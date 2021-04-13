@@ -46,13 +46,10 @@
 #include <linux/file.h>
 #include <linux/kthread.h>
 #include <linux/dma-buf.h>
-<<<<<<< HEAD
-=======
 #ifdef CONFIG_MACH_ASUS_SDM660
 #include <linux/wakelock.h>
 #endif
 #include <linux/pm_qos.h>
->>>>>>> 04c63c7b23eaa... msm: mdss: Reduce latency while processing atomic ioctls
 #include <sync.h>
 #include <sw_sync.h>
 #ifdef CONFIG_MACH_MI
