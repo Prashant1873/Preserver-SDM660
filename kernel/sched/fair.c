@@ -37,11 +37,6 @@
 #include "tune.h"
 #include "walt.h"
 
-#ifdef CONFIG_DYNAMIC_STUNE_BOOST
-extern bool dsb_boosting;
-#endif
-extern int schedtune_task_boost_rcu_locked(struct task_struct *tsk);
-
 /*
  * Targeted preemption latency for CPU-bound tasks:
  * (default: 6ms * (1 + ilog(ncpus)), units: nanoseconds)
@@ -5931,97 +5926,11 @@ static inline int select_energy_cpu_idx(struct energy_env *eenv)
 	 */
 	margin = eenv->cpu[EAS_CPU_PRV].energy >> 6;
 
-	margin = eenv->nrg.before >> 6; /* ~1.56% */
-
-	diff = eenv->nrg.after - eenv->nrg.before;
-
-	eenv->nrg.diff = (abs(diff) < margin) ? 0 : eenv->nrg.diff;
-
-	return eenv->nrg.diff;
-}
-
-
-
-struct target_nrg schedtune_target_nrg;
-
-#ifdef CONFIG_SCHED_TUNE
-#ifdef CONFIG_CGROUP_SCHEDTUNE
-extern bool schedtune_initialized;
-#endif /* CONFIG_CGROUP_SCHEDTUNE */
-
-/*
- * System energy normalization
- * Returns the normalized value, in the range [0..SCHED_CAPACITY_SCALE],
- * corresponding to the specified energy variation.
- */
-static inline int
-normalize_energy(int energy_diff)
-{
-	u32 normalized_nrg;
-
-#ifdef CONFIG_CGROUP_SCHEDTUNE
-	/* during early setup, we don't know the extents */
-	if (unlikely(!schedtune_initialized))
-		return energy_diff < 0 ? -1 : 1 ;
-#endif /* CONFIG_CGROUP_SCHEDTUNE */
-
-#ifdef CONFIG_SCHED_DEBUG
-	{
-	int max_delta;
-
-	/* Check for boundaries */
-	max_delta  = schedtune_target_nrg.max_power;
-	max_delta -= schedtune_target_nrg.min_power;
-	WARN_ON(abs(energy_diff) >= max_delta);
-	}
-#endif
-
-	/* Do scaling using positive numbers to increase the range */
-	normalized_nrg = (energy_diff < 0) ? -energy_diff : energy_diff;
-
-	/* Scale by energy magnitude */
-	normalized_nrg <<= SCHED_CAPACITY_SHIFT;
-
-	/* Normalize on max energy for target platform */
-	normalized_nrg = reciprocal_divide(
-			normalized_nrg, schedtune_target_nrg.rdiv);
-
-	return (energy_diff < 0) ? -normalized_nrg : normalized_nrg;
-}
-
-static inline int
-energy_diff(struct energy_env *eenv)
-{
-	int boost = schedtune_task_boost(eenv->task);
-	int nrg_delta;
-
-	/* Conpute "absolute" energy diff */
-	__energy_diff(eenv);
-
-	/* Return energy diff when boost margin is 0 */
-	if (boost == 0) {
-//		trace_sched_energy_diff(eenv->task,
-//				eenv->src_cpu, eenv->dst_cpu, eenv->util_delta,
-//				eenv->nrg.before, eenv->nrg.after, eenv->nrg.diff,
-//				eenv->cap.before, eenv->cap.after, eenv->cap.delta,
-//				0, -eenv->nrg.diff);
-		return eenv->nrg.diff;
-	}
-
-	/* Compute normalized energy diff */
-	nrg_delta = normalize_energy(eenv->nrg.diff);
-	eenv->nrg.delta = nrg_delta;
-
-	eenv->payoff = schedtune_accept_deltas(
-			eenv->nrg.delta,
-			eenv->cap.delta,
-			eenv->task);
-
-//	trace_sched_energy_diff(eenv->task,
-//			eenv->src_cpu, eenv->dst_cpu, eenv->util_delta,
-//			eenv->nrg.before, eenv->nrg.after, eenv->nrg.diff,
-//			eenv->cap.before, eenv->cap.after, eenv->cap.delta,
-//			eenv->nrg.delta, eenv->payoff);
+	/*
+	 * By default the EAS_CPU_PRV CPU is considered the most energy
+	 * efficient, with a 0 energy variation.
+	 */
+	eenv->next_idx = EAS_CPU_PRV;
 
 	/*
 	 * Compare the other CPU candidates to find a CPU which can be
@@ -6190,10 +6099,10 @@ static bool cpu_overutilized(int cpu)
 	return __cpu_overutilized(cpu, 0);
 }
 
+#ifdef CONFIG_SCHED_TUNE
 
 struct reciprocal_value schedtune_spc_rdiv;
 
-#ifdef CONFIG_SCHED_TUNE
 static long
 schedtune_margin(unsigned long signal, long boost)
 {
