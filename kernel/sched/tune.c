@@ -658,10 +658,6 @@ int schedtune_task_boost(struct task_struct *p)
 	return task_boost;
 }
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 56a43b19d5437... sched: enable dummy stune /dev objects to keep roms happy
 int schedtune_prefer_idle(struct task_struct *p)
 {
 	struct schedtune *st;

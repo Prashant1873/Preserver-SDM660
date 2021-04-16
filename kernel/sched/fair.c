@@ -37,14 +37,11 @@
 #include "tune.h"
 #include "walt.h"
 
-<<<<<<< HEAD
-=======
 #ifdef CONFIG_DYNAMIC_STUNE_BOOST
 extern bool dsb_boosting;
 #endif
 extern int schedtune_task_boost_rcu_locked(struct task_struct *tsk);
 
->>>>>>> 56a43b19d5437... sched: enable dummy stune /dev objects to keep roms happy
 /*
  * Targeted preemption latency for CPU-bound tasks:
  * (default: 6ms * (1 + ilog(ncpus)), units: nanoseconds)
