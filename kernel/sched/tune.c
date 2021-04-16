@@ -708,9 +708,13 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 	int boost_pct;
 
 if (!strcmp(css->cgroup->kn->name, "top-app"))
-		boost = 0;
+			boost = 0;
+			
+if (!strcmp(css->cgroup->kn->name, "foreground"))
+			boost = -3;
 
-	if (boost < -100 || boost > 100)
+
+if (boost < -100 || boost > 100)
 		return -EINVAL;
 	boost_pct = boost;
 
@@ -864,7 +868,7 @@ static void write_default_values(struct cgroup_subsys_state *css)
 	static struct st_data st_targets[] = {
 		{ "top-app",	0, 0 },
 		{ "foreground",	0, 0 },
-		{ "background", -10, 0}
+		{ "background", -10, 0 }
 	};
 	int i;
 
@@ -875,8 +879,8 @@ static void write_default_values(struct cgroup_subsys_state *css)
 			pr_info("stune_assist: setting values for %s: boost=%d prefer_idle=%d\n",
 				tgt.name, tgt.boost, tgt.prefer_idle);
 
-			boost_write(css, NULL, tgt.boost);
-			prefer_idle_write(css, NULL, tgt.prefer_idle);
+			boost_write(css, NULL, 0);
+			prefer_idle_write(css, NULL, 0);
 		}
 	}
 }
