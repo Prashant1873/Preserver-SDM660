@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export KERNELNAME=Alyssa
+export KERNELNAME=Preserver
 
 export LOCALVERSION=
 
