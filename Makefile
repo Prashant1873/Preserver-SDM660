@@ -707,7 +707,7 @@ ifeq ($(cc-name),gcc)
 KBUILD_CFLAGS   += -O2
 endif
 ifeq ($(cc-name),clang)
-KBUILD_CFLAGS   += -O3
+KBUILD_CFLAGS   += -O2
 KBUILD_CFLAGS	+= -mcpu=cortex-a53 -mtune=cortex-a53
 endif
 endif
@@ -715,7 +715,7 @@ endif
 
 # disable warning: tokens terminating statement expression are separated by whitespace on latest clang 12
 ifeq ($(cc-name),clang)
-KBUILD_CFLAGS   += -O3
+KBUILD_CFLAGS   += -O2
 KBUILD_CFLAGS	+= -mcpu=cortex-a73 -mtune=cortex-a73
 endif
 endif
