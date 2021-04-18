@@ -75,7 +75,6 @@
 #include <linux/context_tracking.h>
 #include <linux/compiler.h>
 #include <linux/cpufreq_times.h>
-
 #include <asm/switch_to.h>
 #include <asm/tlb.h>
 #include <asm/irq_regs.h>
@@ -133,7 +132,7 @@ const_debug unsigned int sysctl_sched_features =
  * Number of tasks to iterate in a single balance run.
  * Limited because this is done with IRQs disabled.
  */
-const_debug unsigned int sysctl_sched_nr_migrate = 24;
+const_debug unsigned int sysctl_sched_nr_migrate = 64;
 
 /*
  * period over which we average the RT time consumption, measured
