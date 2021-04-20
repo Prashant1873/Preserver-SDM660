@@ -28,14 +28,14 @@ unsigned long boosted_cpu_util(int cpu);
 #define cpufreq_driver_fast_switch(x, y) 0
 #define cpufreq_enable_fast_switch(x)
 #define cpufreq_disable_fast_switch(x)
-#define UP_RATE_LIMIT_US			(500)
-#define DOWN_RATE_LIMIT_US			(5000)
+#define UP_RATE_LIMIT_US			(10000)
+#define DOWN_RATE_LIMIT_US			(10000)
 
 static unsigned int default_efficient_freq_lp[] = {1113600, 1536000};
-static unsigned int default_up_delay_lp[] = {1000, 4000};
+static unsigned int default_up_delay_lp[] = {500, 2000};
 
-static unsigned int default_efficient_freq_hp[] = {1113600, 1747200};
-static unsigned int default_up_delay_hp[] = {1000, 5000};
+static unsigned int default_efficient_freq_hp[] = {1401600, 1747200};
+static unsigned int default_up_delay_hp[] = {1000, 2000};
 
 struct sugov_tunables {
 	struct			gov_attr_set attr_set;
