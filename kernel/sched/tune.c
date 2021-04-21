@@ -692,12 +692,12 @@ static struct cftype files[] = {
 	{
 		.name = "boost",
 		.read_s64 = boost_read,
-		.write_s64 = boost_write_wrapper,
+		.write_s64 = boost_write,
 	},
 	{
 		.name = "prefer_idle",
 		.read_u64 = prefer_idle_read,
-		.write_u64 = prefer_idle_write_wrapper,
+		.write_u64 = prefer_idle_write,
 	},
 	{ }	/* terminate */
 };
@@ -730,8 +730,8 @@ struct st_data {
 static void write_default_values(struct cgroup_subsys_state *css)
 {
 	static struct st_data st_targets[] = {
-		{ "top-app",	1, 1 },
-		{ "foreground",	0, 1 }
+		{ "top-app",	0, 0 },
+		{ "foreground",	0, 0 }
 	};
 	int i;
 

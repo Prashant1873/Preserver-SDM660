@@ -1365,7 +1365,6 @@ static ssize_t mic_gain_show(struct kobject *kobj,
 static struct attribute *sound_control_attrs[] = {
 		&headphone_gain_attribute.attr,
 		&mic_gain_attribute.attr,
-		&earpiece_gain_attribute.attr,
 		&speaker_gain_attribute.attr,
 		NULL,
 };
