@@ -1785,9 +1785,9 @@ static ssize_t cpuset_write_resmask_wrapper(struct kernfs_open_file *of,
 		{ "background",		"0-1" },
 		{ "camera-daemon",	"0-2" },
 		{ "system-background",	"0-3" },
-		{ "restricted",		"0-5" },
+		{ "restricted",		"0-3" },
 		{ "top-app",		"0-7" },
-		{ "foreground",		"0-2,6-7" },
+		{ "foreground",		"0-3,6-7" },
 	};
 	struct cpuset *cs = css_cs(of_css(of));
 	const char *cpuset_cgroup_name = cs->css.cgroup->kn->name;
@@ -1798,17 +1798,6 @@ static ssize_t cpuset_write_resmask_wrapper(struct kernfs_open_file *of,
     if (!strcmp(cpuset_cgroup_name, cs_tgt.name)) {
 						return cpuset_write_resmask_assist(of, cs_tgt, nbytes, off);
 			}
-	}
-#endif
-
-	if (task_is_booster(current)) {
-		for (i = 0; i < ARRAY_SIZE(cs_targets); i++) {
-			struct cs_target tgt = cs_targets[i];
-
-			if (!strcmp(cs->css.cgroup->kn->name, tgt.name))
-				return cpuset_write_resmask_assist(of, tgt,
-								   nbytes, off);
-		}
 	}
 #endif
 
