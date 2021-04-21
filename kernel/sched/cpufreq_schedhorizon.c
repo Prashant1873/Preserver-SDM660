@@ -51,7 +51,6 @@ struct sugov_tunables {
 
 struct sugov_policy {
 	struct cpufreq_policy *policy;
-
 	struct sugov_tunables *tunables;
 	struct list_head tunables_hook;
 
@@ -945,8 +944,6 @@ static int sugov_init(struct cpufreq_policy *policy)
                         tunables->down_rate_limit_us *= lat;
                 }
 	}
-
-	tunables->iowait_boost_enable = policy->iowait_boost_enable;
 
 	policy->governor_data = sg_policy;
 	sg_policy->tunables = tunables;
