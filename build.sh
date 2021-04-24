@@ -10,7 +10,7 @@ export KBUILD_BUILD_HOST=kiragod
 
 export TOOLCHAIN=clang
 
-export DEVICES=wayne_miui
+export DEVICES=wayne
 
 source helper
 
