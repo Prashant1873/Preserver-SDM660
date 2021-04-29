@@ -9,8 +9,6 @@ config TOUCHSCREEN_NT36xxx
 	  to your system.
 
 	  If unsure, say N.
-<<<<<<< HEAD
-=======
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called nvt.
@@ -23,4 +21,3 @@ config BOOT_FIRMWARE_UPDATE_NVT_A
 
 
 	  If unsure, say N.
->>>>>>> de0ff4d2391b... [1/2] nvt_touch_*: Add Kconfig option for ena/disabling boot firmware update

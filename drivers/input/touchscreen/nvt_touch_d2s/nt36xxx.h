@@ -40,7 +40,7 @@
 #define TOUCH_MAX_FINGER_NUM 10
 #define TOUCH_FORCE_NUM 1000
 
-#define WAKEUP_GESTURE 0
+#define WAKEUP_GESTURE 1
 #if WAKEUP_GESTURE
 extern const uint16_t gesture_key_array[];
 #endif

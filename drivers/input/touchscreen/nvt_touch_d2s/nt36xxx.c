@@ -638,13 +638,6 @@ static int32_t nvt_ts_probe(struct i2c_client *client, const struct i2c_device_i
 	for (retry = 0; retry < (sizeof(gesture_key_array) / sizeof(gesture_key_array[0])); retry++)
 		input_set_capability(ts->input_dev, EV_KEY, gesture_key_array[retry]);
 	wake_lock_init(&gestrue_wakelock, WAKE_LOCK_SUSPEND, "poll-wake-lock");
-#ifdef CONFIG_TOUCHSCREEN_COMMON
-	ret = tp_common_set_double_tap_ops(&double_tap_ops);
-	if (ret < 0) {
-		NVT_ERR("%s: Failed to create double_tap node err=%d\n",
-			__func__, ret);
-	}
-#endif
 #endif
 
 	sprintf(ts->phys, "input/ts");
