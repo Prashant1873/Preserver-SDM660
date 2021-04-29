@@ -8,11 +8,6 @@ config TOUCHSCREEN_NVT_E7S
 		to your system.
 		If unsure, say N.
 
-	  If unsure, say N.
-
-	  To compile this driver as a module, choose M here: the
-	  module will be called nvt.
-
 config BOOT_FIRMWARE_UPDATE_NVT_E7S
 	tristate "boot firmware update function for novatek touchscreens"
 	depends on TOUCHSCREEN_NVT_E7S
