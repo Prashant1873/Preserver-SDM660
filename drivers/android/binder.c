@@ -2695,7 +2695,7 @@ static int binder_translate_fd_array(struct binder_fd_array_object *fda,
 	binder_size_t fdi, fd_buf_size, num_installed_fds;
 	binder_size_t fda_offset;
 	int target_fd;
-
+	struct binder_proc *proc = thread->proc;
 	struct binder_proc *target_proc = t->to_proc;
 
 	fd_buf_size = sizeof(u32) * fda->num_fds;
@@ -2769,7 +2769,7 @@ static int binder_fixup_parent(struct binder_transaction *t,
 {
 	struct binder_buffer_object *parent;
 	struct binder_buffer *b = t->buffer;
-
+	struct binder_proc *proc = thread->proc;
 	struct binder_proc *target_proc = t->to_proc;
 	struct binder_object object;
 	binder_size_t buffer_offset;
@@ -4558,6 +4558,8 @@ static void binder_release_work(struct binder_proc *proc,
 						   BR_DEAD_REPLY);
 		} break;
 		case BINDER_WORK_RETURN_ERROR: {
+			struct binder_error *e = container_of(
+					w, struct binder_error, work);
 
 			binder_debug(BINDER_DEBUG_DEAD_TRANSACTION,
 				"undelivered TRANSACTION_ERROR: %u\n",
@@ -5098,6 +5100,7 @@ err_unlocked:
 
 static void binder_vma_open(struct vm_area_struct *vma)
 {
+	struct binder_proc *proc = vma->vm_private_data;
 
 	binder_debug(BINDER_DEBUG_OPEN_CLOSE,
 		     "%d open vm area %lx-%lx (%ld K) vma %lx pagep %lx\n",
