@@ -6,14 +6,12 @@ make_build(){
 	print "Making kernel dtb..." green
 	if [ $TOOLCHAIN == clang ]; then
 		export KBUILD_COMPILER_STRING=$(clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
-		PATH="$(pwd)/clang/bin:${PATH}"
+		export PATH="$(pwd)/clang/bin:${PATH}"
 		make O=out ARCH=arm64 $1
 		make -j$(nproc --all) O=out \
-				      ld-name=lld \
                       ARCH=arm64 \
                       CC=clang \
                       HOSTCC=clang \
-                      LD=ld.lld \
                       AR=llvm-ar \
                       NM=llvm-nm \
                       OBJCOPY=llvm-objcopy \
