@@ -51,9 +51,6 @@ static void nvt_ts_late_resume(struct early_suspend *h);
 #endif
 
 #if WAKEUP_GESTURE
-#ifdef CONFIG_TOUCHSCREEN_COMMON
-#include <linux/input/tp_common.h>
-#endif
 #define WAKEUP_OFF 4
 #define WAKEUP_ON 5
 #define GESTURE_WORD_C          12
