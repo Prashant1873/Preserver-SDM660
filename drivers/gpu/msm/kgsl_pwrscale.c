@@ -1014,17 +1014,15 @@ static void do_devfreq_resume(struct work_struct *work)
 static void do_devfreq_notify(struct work_struct *work)
 {
 	struct kgsl_pwrscale *pwrscale = container_of(work,
-			struct kgsl_pwrscale, devfreq_notify_ws);
+	struct kgsl_pwrscale, devfreq_notify_ws);
 	struct devfreq *devfreq = pwrscale->devfreqptr;
 	struct devfreq *bus_devfreq = pwrscale->bus_devfreq;
 
 	mutex_lock(&devfreq->lock);
-	update_devfreq(devfreq);
-	mutex_unlock(&devfreq->lock);
+		mutex_unlock(&devfreq->lock);
 
 	if (bus_devfreq) {
 		mutex_lock(&bus_devfreq->lock);
-		update_devfreq(bus_devfreq);
 		mutex_unlock(&bus_devfreq->lock);
 	}
 }
