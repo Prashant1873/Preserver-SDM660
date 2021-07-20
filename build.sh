@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export KERNELNAME=Preserver
+export KERNELNAME=RyZeN
 
 export LOCALVERSION=
 
