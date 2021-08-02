@@ -1,6 +1,8 @@
 #!/bin/bash
 
 DATE=$(date +"%Y%m%d-%H%M")
+TELEGRAM=Telegram/telegram
+CHANNEL_ID=-1001261511799
 
 make_build(){
 	print "Making kernel dtb..." green
@@ -29,6 +31,22 @@ make_build(){
 
 make_clean(){
 	rm -rf out
+}
+
+sendInfo() {
+  "${TELEGRAM}" -c "${CHANNEL_ID}" -H \
+      "$(
+          for POST in "${@}"; do
+              echo "${POST}"
+          done
+      )"
+}
+
+sendKernel() {
+  "${TELEGRAM}" -f "$(echo "$(pwd)"/*.zip)" \
+  -c "${CHANNEL_ID}" -H \
+      "# <code>Jasway 4.4 Preserver</code> \
+	  Build ready :D"
 }
 
 send_msg(){
@@ -77,6 +95,11 @@ print(){
 }
 
 gen_toolchain(){
+	print "Cloning Telegram files..." green
+	git clone --depth=1 https://github.com/Prashant1873/telegram Telegram
+	print "Cloning Anykernel files..." green
+	git clone https://github.com/Prashant1873/Anykerne-3.git -b new Anykerne-3
+
 	print "Cloning toolchain files..." green
 	if [ $TOOLCHAIN == "clang" ]
 	then
@@ -101,4 +124,18 @@ build(){
 		make_build "${1}_defconfig"
 	fi
 		mkzip "$KERNELNAME-${1}${2}${3}-$DATE.zip"
+	if [ -f *.zip ];
+    then
+	END=$(date +"%s")
+	DIFF=$(( END - START ))
+	sendKernel
+    sendInfo "<b>BUILD took $((DIFF / 60))m:$((DIFF % 60))s </b>" \
+	         "=================================" \
+			 "<b>Linux Version :</b> <code>$(cat < out/.config | grep Linux/arm64 | cut -d " " -f3)</code>" \
+             "<b>Build Date :</b> <code>$(date +"%A, %d %b %Y, %H:%M:%S")</code>" \
+	         " <b>Most recent changes are:</b> $(git log --pretty=format:'%h : %s' -15 --abbrev=7 --first-parent)"
+	sendInfo "================================="		 
+	print "BUILD took $((DIFF / 60))m:$((DIFF % 60))s | Most recent changes are : \n $(git log --pretty=format:'%h : %s' -15 --abbrev=7 --first-parent)" green
+    mv *.zip allbuilds
+    fi
 }

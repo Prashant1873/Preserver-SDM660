@@ -37,7 +37,7 @@ struct blkcg_gq;
 struct blk_flush_queue;
 struct pr_ops;
 
-#define BLKDEV_MIN_RQ	4
+#define BLKDEV_MIN_RQ	1
 #define BLKDEV_MAX_RQ	32	/* Default maximum */
 
 /*
@@ -501,6 +501,7 @@ struct request_queue {
 #define QUEUE_FLAG_FAST        23	/* fast block device (e.g. ram based) */
 
 #define QUEUE_FLAG_DEFAULT	((1 << QUEUE_FLAG_STACKABLE)	|	\
+				 (0 << QUEUE_FLAG_IO_STAT)      |	\
 				 (1 << QUEUE_FLAG_SAME_COMP)	|	\
 				 (0 << QUEUE_FLAG_ADD_RANDOM))
 
