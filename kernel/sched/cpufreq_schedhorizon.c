@@ -28,11 +28,11 @@ unsigned long boosted_cpu_util(int cpu);
 #define cpufreq_driver_fast_switch(x, y) 0
 #define cpufreq_enable_fast_switch(x)
 #define cpufreq_disable_fast_switch(x)
-#define UP_RATE_LIMIT_US			(700)
+#define UP_RATE_LIMIT_US			(10000)
 #define DOWN_RATE_LIMIT_US			(20000)
 
 static unsigned int default_efficient_freq_lp[] = {1113600, 1536000};
-static unsigned int default_up_delay_lp[] = {50, 1000};
+static unsigned int default_up_delay_lp[] = {250, 1000};
 
 static unsigned int default_efficient_freq_hp[] = {1747200};
 static unsigned int default_up_delay_hp[] = {3000};
