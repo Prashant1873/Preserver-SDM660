@@ -434,7 +434,6 @@ struct sock {
 	kmemcheck_bitfield_end(flags);
 
 	u16			sk_gso_max_segs;
-	int			sk_rcvlowat;
 	u8			sk_pacing_shift;
 	unsigned long	        sk_lingertime;
 	struct proto		*sk_prot_creator;

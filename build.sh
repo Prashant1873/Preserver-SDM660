@@ -8,7 +8,7 @@ export KBUILD_BUILD_USER=Prashant
 
 export KBUILD_BUILD_HOST=kiragod
 
-export TOOLCHAIN=clang
+export TOOLCHAIN=gcc
 
 export DEVICES=wayne
 
