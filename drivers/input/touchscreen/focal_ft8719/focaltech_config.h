@@ -114,7 +114,7 @@
  * Report Pressure in multitouch
  * 1:enable(default),0:disable
 */
-#define FTS_REPORT_PRESSURE_EN                  1
+#define FTS_REPORT_PRESSURE_EN                  0
 
 /*
  * Gesture function enable
@@ -126,19 +126,19 @@
  * ESD check & protection
  * default: disable
  */
-#define FTS_ESDCHECK_EN                         1
+#define FTS_ESDCHECK_EN                         0
 
 /*
  * Production test enable
  * 1: enable, 0:disable(default)
  */
-#define FTS_TEST_EN                             1
+#define FTS_TEST_EN                             0
 
 /*
  * Glove mode enable
  * 1: enable, 0:disable(default)
  */
-#define FTS_GLOVE_EN                            0
+#define FTS_GLOVE_EN                            1
 /*
  * cover enable
  * 1: enable, 0:disable(default)
@@ -162,6 +162,11 @@
 #define FTS_TP_LOCKDOWN_INFO                    1
 
 /*
+* Read TP FW information
+*/
+#define FTS_READ_TP_FW                       1    /* add tp-fw information by yangjiangzhu  2018/3/12 */	
+
+/*
  * Pinctrl enable
  * default: disable
  */
@@ -180,7 +185,7 @@
 /*
  * auto upgrade, please keep enable
  */
-#define FTS_AUTO_UPGRADE_EN                     1
+#define FTS_AUTO_UPGRADE_EN                     0
 
 /*
  * auto upgrade for lcd cfg

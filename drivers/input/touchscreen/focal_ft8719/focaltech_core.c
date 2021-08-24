@@ -938,7 +938,7 @@ static int fts_irq_registration(struct fts_ts_data *ts_data)
         pdata->irq_gpio_flags = IRQF_TRIGGER_FALLING;
     FTS_INFO("irq flag:%x", pdata->irq_gpio_flags);
     ret = request_threaded_irq(ts_data->irq, NULL, fts_ts_interrupt,
-                               pdata->irq_gpio_flags | IRQF_ONESHOT,
+                               pdata->irq_gpio_flags | IRQF_ONESHOT | IRQF_PERF_CRITICAL | IRQF_NO_SUSPEND,
                                ts_data->client->name, ts_data);
 
     return ret;
@@ -1301,6 +1301,12 @@ static int fts_ts_probe(struct i2c_client *client, const struct i2c_device_id *i
     int ret = 0;
     struct fts_ts_platform_data *pdata;
     struct fts_ts_data *ts_data;
+/* add tp-fw information by yangjiangzhu  2018/3/12 start */	
+#if FTS_READ_TP_FW
+	char fw_version[64];
+	u8 regvalue = 0;
+#endif
+/* add tp-fw information by yangjiangzhu  2018/3/12 end */
 
     FTS_FUNC_ENTER();
     if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
@@ -1337,7 +1343,7 @@ static int fts_ts_probe(struct i2c_client *client, const struct i2c_device_id *i
     ts_data->pdata = pdata;
     i2c_set_clientdata(client, ts_data);
 
-    ts_data->ts_workqueue = create_singlethread_workqueue("fts_wq");
+    ts_data->ts_workqueue = create_workqueue("fts_wq");
     if (NULL == ts_data->ts_workqueue) {
         FTS_ERROR("failed to create fts workqueue");
     }
@@ -1476,6 +1482,15 @@ if (ret) {
 	}
 #endif
 /* add tp lockdown information by yangjiangzhu  2018/5/21 end */	
+
+/* add tp-fw information by yangjiangzhu  2018/3/12 start */	
+#if FTS_READ_TP_FW
+	fts_i2c_read_reg(client,FTS_REG_FW_VER,&regvalue);
+	memset(fw_version, 0, sizeof(fw_version));
+	sprintf(fw_version, "[FW]0x%02x,[IC]ft8719", regvalue);
+	init_tp_fm_info(0, fw_version, "boe");
+#endif
+/* add tp-fw information by yangjiangzhu  2018/3/12 end */	
 
     FTS_FUNC_EXIT();
     return 0;

@@ -33,6 +33,7 @@
 
 #include <linux/kernel.h>
 #include <linux/module.h>
+#include <linux/proc_fs.h>
 #include <linux/slab.h>
 #include <linux/interrupt.h>
 #include <linux/delay.h>
@@ -42,18 +43,20 @@
 #include <linux/regulator/consumer.h>
 #include <linux/input/synaptics_dsx.h>
 #include "synaptics_dsx_core.h"
+#ifdef KERNEL_ABOVE_2_6_38
 #include <linux/input/mt.h>
-#include <linux/kthread.h>
-#include <linux/sched/rt.h>
-
-#ifdef CONFIG_TOUCHSCREEN_COMMON
-#include <linux/input/tp_common.h>
 #endif
+#include "../lct_tp_gesture.h"
+#include <linux/input/tp_common.h>
 
 #define INPUT_PHYS_NAME "synaptics_dsx/touch_input"
 #define STYLUS_PHYS_NAME "synaptics_dsx/stylus"
 
 #define VIRTUAL_KEY_MAP_FILE_NAME "virtualkeys." PLATFORM_DRIVER_NAME
+
+#ifdef KERNEL_ABOVE_2_6_38
+#define TYPE_B_PROTOCOL
+#endif
 
 /*
 #define USE_DATA_SERVER
@@ -122,8 +125,41 @@
 
 static struct synaptics_rmi4_data *rmi4_data;
 
+#if 1
 bool synaptics_gesture_func_on = false;
-static bool gesture_delay = false;
+bool gesture_delay = false;
+#define WAKEUP_OFF 4
+#define WAKEUP_ON 5
+
+int synaptics_gesture_switch(struct input_dev *dev, unsigned int type, unsigned int code, int value)
+{
+
+	unsigned int input ;
+	if (type == EV_SYN && code == SYN_CONFIG)
+	{ 
+		if (rmi4_data->suspend)
+		{
+			if ((value != WAKEUP_OFF) || synaptics_gesture_func_on)
+			{
+				gesture_delay = true;
+			}
+		}
+		if(value == WAKEUP_OFF){
+			synaptics_gesture_func_on = false;
+			printk("close double-click resume\n");
+			input = 0;
+		}else if(value == WAKEUP_ON) {
+			synaptics_gesture_func_on  = true;
+			printk("open double-click resume\n");
+			input = 1;
+		}
+	}
+	if (rmi4_data->f11_wakeup_gesture || rmi4_data->f12_wakeup_gesture)
+		rmi4_data->enable_wakeup_gesture = input;
+
+	return 0;
+}
+#endif
 
 extern int get_tddi_lockdown_data(unsigned char *lockdown_data, unsigned short leng);
 static int synaptics_rmi4_check_status(struct synaptics_rmi4_data *rmi4_data,
@@ -677,9 +713,8 @@ struct synaptics_rmi4_exp_fn_data {
 	bool queue_work;
 	struct mutex mutex;
 	struct list_head list;
-	struct kthread_work touch_work;
-	struct kthread_worker touch_worker;
-	struct task_struct *touch_worker_thread;
+	struct delayed_work work;
+	struct workqueue_struct *workqueue;
 	struct synaptics_rmi4_data *rmi4_data;
 };
 
@@ -730,7 +765,6 @@ static struct kobj_attribute virtual_key_map_attr = {
 	.show = synaptics_rmi4_virtual_key_map_show,
 };
 
-#ifdef CONFIG_TOUCHSCREEN_COMMON
 static ssize_t double_tap_show(struct kobject *kobj,
 			       struct kobj_attribute *attr, char *buf)
 {
@@ -754,7 +788,6 @@ static struct tp_common_ops double_tap_ops = {
 	.show = double_tap_show,
 	.store = double_tap_store
 };
-#endif
 
 static ssize_t synaptics_rmi4_f01_reset_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
@@ -920,13 +953,15 @@ static ssize_t synaptics_rmi4_wake_gesture_store(struct device *dev,
 	if (sscanf(buf, "%u", &input) != 1)
 		return -EINVAL;
 
-	input = input > 0 ? 1 : 0;
+	input_event(rmi4_data->input_dev, EV_SYN, SYN_CONFIG, input ? WAKEUP_ON : WAKEUP_OFF);
 
-	if (rmi4_data->suspend && input != rmi4_data->enable_wakeup_gesture)
-		gesture_delay = true;
+	if(synaptics_gesture_func_on)
+		input = input > 0 ? 1 : 0;
+	else
+		input = 0;
 
 	if (rmi4_data->f11_wakeup_gesture || rmi4_data->f12_wakeup_gesture)
-		synaptics_gesture_func_on = rmi4_data->enable_wakeup_gesture = input;
+		rmi4_data->enable_wakeup_gesture = input;
 
 	return count;
 }
@@ -971,6 +1006,36 @@ static ssize_t synaptics_rmi4_virtual_key_map_show(struct kobject *kobj,
 	}
 
 	return count;
+}
+
+static int synaptics_rmi4_proc_init(struct kernfs_node *sysfs_node_parent)
+{
+	int ret = 0;
+	char *buf, *path = NULL;
+	char *double_tap_sysfs_node;
+	struct proc_dir_entry *proc_entry_tp = NULL;
+	struct proc_dir_entry *proc_symlink_tmp  = NULL;
+
+	buf = kzalloc(PATH_MAX, GFP_KERNEL);
+	if (buf)
+		path = kernfs_path(sysfs_node_parent, buf, PATH_MAX);
+
+	double_tap_sysfs_node = kzalloc(PATH_MAX, GFP_KERNEL);
+	if (double_tap_sysfs_node)
+		sprintf(double_tap_sysfs_node, "/sys%s/%s", path, "wake_gesture");
+	proc_symlink_tmp = proc_symlink("wake_node",
+			proc_entry_tp, double_tap_sysfs_node);
+	proc_symlink_tmp = proc_symlink("double_tap_enable",
+			proc_entry_tp, double_tap_sysfs_node);
+	if (proc_symlink_tmp == NULL) {
+		ret = -ENOMEM;
+		pr_err("%s: Couldn't create wake_node symlink\n", __func__);
+	}
+
+	kfree(buf);
+	kfree(double_tap_sysfs_node);
+
+	return ret;
 }
 
 static void synaptics_rmi4_f11_wg(struct synaptics_rmi4_data *rmi4_data,
@@ -1125,8 +1190,10 @@ static int synaptics_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data,
 
 		if (detected_gestures) {
 			input_report_key(rmi4_data->input_dev, KEY_WAKEUP, 1);
+			input_report_key(rmi4_data->input_dev, KEY_DOUBLE_TAP, 1);
 			input_sync(rmi4_data->input_dev);
 			input_report_key(rmi4_data->input_dev, KEY_WAKEUP, 0);
+			input_report_key(rmi4_data->input_dev, KEY_DOUBLE_TAP, 0);
 			input_sync(rmi4_data->input_dev);
 			rmi4_data->suspend = false;
 		}
@@ -1156,9 +1223,11 @@ static int synaptics_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data,
 		 * 10 = finger present but data may be inaccurate
 		 * 11 = reserved
 		 */
+#ifdef TYPE_B_PROTOCOL
 		input_mt_slot(rmi4_data->input_dev, finger);
 		input_mt_report_slot_state(rmi4_data->input_dev,
 				MT_TOOL_FINGER, finger_status);
+#endif
 
 		if (finger_status) {
 			data_offset = data_addr +
@@ -1206,6 +1275,9 @@ static int synaptics_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data,
 			input_report_abs(rmi4_data->input_dev,
 					ABS_MT_TOUCH_MINOR, min(wx, wy));
 #endif
+#ifndef TYPE_B_PROTOCOL
+			input_mt_sync(rmi4_data->input_dev);
+#endif
 
 			dev_dbg(rmi4_data->pdev->dev.parent,
 					"%s: Finger %d: status = 0x%02x, x = %d, y = %d, wx = %d, wy = %d\n",
@@ -1222,6 +1294,9 @@ static int synaptics_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data,
 				BTN_TOUCH, 0);
 		input_report_key(rmi4_data->input_dev,
 				BTN_TOOL_FINGER, 0);
+#ifndef TYPE_B_PROTOCOL
+		input_mt_sync(rmi4_data->input_dev);
+#endif
 	}
 
 	input_sync(rmi4_data->input_dev);
@@ -1287,8 +1362,10 @@ static int synaptics_rmi4_f12_abs_report(struct synaptics_rmi4_data *rmi4_data,
 
 		if (gesture_type && gesture_type != F12_UDG_DETECT) {
 			input_report_key(rmi4_data->input_dev, KEY_WAKEUP, 1);
+			input_report_key(rmi4_data->input_dev, KEY_DOUBLE_TAP, 1);
 			input_sync(rmi4_data->input_dev);
 			input_report_key(rmi4_data->input_dev, KEY_WAKEUP, 0);
+			input_report_key(rmi4_data->input_dev, KEY_DOUBLE_TAP, 0);
 			input_sync(rmi4_data->input_dev);
 
 			rmi4_data->suspend = false;
@@ -1396,9 +1473,11 @@ static int synaptics_rmi4_f12_abs_report(struct synaptics_rmi4_data *rmi4_data,
 			/* Stylus has priority over fingers */
 			if (stylus_presence)
 				break;
+#ifdef TYPE_B_PROTOCOL
 			input_mt_slot(rmi4_data->input_dev, finger);
 			input_mt_report_slot_state(rmi4_data->input_dev,
 					MT_TOOL_FINGER, 1);
+#endif
 
 			input_report_key(rmi4_data->input_dev,
 					BTN_TOUCH, 1);
@@ -1456,6 +1535,9 @@ static int synaptics_rmi4_f12_abs_report(struct synaptics_rmi4_data *rmi4_data,
 			input_report_abs(rmi4_data->input_dev,
 					ABS_MT_PRESSURE, pressure);
 #endif
+#ifndef TYPE_B_PROTOCOL
+			input_mt_sync(rmi4_data->input_dev);
+#endif
 
 			dev_dbg(rmi4_data->pdev->dev.parent,
 					"%s: Finger %d: status = 0x%02x, x = %d, y = %d, wx = %d, wy = %d\n",
@@ -1506,9 +1588,11 @@ static int synaptics_rmi4_f12_abs_report(struct synaptics_rmi4_data *rmi4_data,
 			touch_count++;
 			break;
 		default:
+#ifdef TYPE_B_PROTOCOL
 			input_mt_slot(rmi4_data->input_dev, finger);
 			input_mt_report_slot_state(rmi4_data->input_dev,
 					MT_TOOL_FINGER, 0);
+#endif
 			break;
 		}
 	}
@@ -1522,6 +1606,9 @@ static int synaptics_rmi4_f12_abs_report(struct synaptics_rmi4_data *rmi4_data,
 				BTN_TOUCH, 0);
 		input_report_key(rmi4_data->input_dev,
 				BTN_TOOL_FINGER, 0);
+#ifndef TYPE_B_PROTOCOL
+		input_mt_sync(rmi4_data->input_dev);
+#endif
 
 		if (rmi4_data->stylus_enable) {
 			stylus_presence = 0;
@@ -3419,8 +3506,15 @@ static void synaptics_rmi4_set_params(struct synaptics_rmi4_data *rmi4_data)
 			FORCE_LEVEL_MAX, 0, 0);
 #endif
 
+#ifdef TYPE_B_PROTOCOL
+#ifdef KERNEL_ABOVE_3_6
 	input_mt_init_slots(rmi4_data->input_dev,
 			rmi4_data->num_of_fingers, INPUT_MT_DIRECT);
+#else
+	input_mt_init_slots(rmi4_data->input_dev,
+			rmi4_data->num_of_fingers);
+#endif
+#endif
 
 	rmi4_data->input_settings.num_of_fingers = rmi4_data->num_of_fingers;
 
@@ -3455,7 +3549,9 @@ static void synaptics_rmi4_set_params(struct synaptics_rmi4_data *rmi4_data)
 
 	if (rmi4_data->f11_wakeup_gesture || rmi4_data->f12_wakeup_gesture) {
 		set_bit(KEY_WAKEUP, rmi4_data->input_dev->keybit);
+		set_bit(KEY_DOUBLE_TAP, rmi4_data->input_dev->keybit);
 		input_set_capability(rmi4_data->input_dev, EV_KEY, KEY_WAKEUP);
+		input_set_capability(rmi4_data->input_dev, EV_KEY, KEY_DOUBLE_TAP);
 	}
 
 	return;
@@ -3746,15 +3842,20 @@ static int synaptics_rmi4_free_fingers(struct synaptics_rmi4_data *rmi4_data)
 
 	mutex_lock(&(rmi4_data->rmi4_report_mutex));
 
+#ifdef TYPE_B_PROTOCOL
 	for (ii = 0; ii < rmi4_data->num_of_fingers; ii++) {
 		input_mt_slot(rmi4_data->input_dev, ii);
 		input_mt_report_slot_state(rmi4_data->input_dev,
 				MT_TOOL_FINGER, 0);
 	}
+#endif
 	input_report_key(rmi4_data->input_dev,
 			BTN_TOUCH, 0);
 	input_report_key(rmi4_data->input_dev,
 			BTN_TOOL_FINGER, 0);
+#ifndef TYPE_B_PROTOCOL
+	input_mt_sync(rmi4_data->input_dev);
+#endif
 	input_sync(rmi4_data->input_dev);
 
 	if (rmi4_data->stylus_enable) {
@@ -4083,7 +4184,7 @@ static void synaptics_rmi4_sleep_enable(struct synaptics_rmi4_data *rmi4_data,
 	return;
 }
 
-static void synaptics_rmi4_exp_fn_work(struct kthread_work *work)
+static void synaptics_rmi4_exp_fn_work(struct work_struct *work)
 {
 	struct synaptics_rmi4_exp_fhandler *exp_fhandler;
 	struct synaptics_rmi4_exp_fhandler *exp_fhandler_temp;
@@ -4153,12 +4254,35 @@ exit:
 	mutex_unlock(&exp_data.mutex);
 
 	if (exp_data.queue_work) {
-		queue_kthread_work(&exp_data.touch_worker, &exp_data.touch_work);
+		queue_delayed_work(exp_data.workqueue,
+				&exp_data.work,
+				msecs_to_jiffies(EXP_FN_WORK_DELAY_MS));
 	}
 
 	return;
 }
 EXPORT_SYMBOL(synaptics_rmi4_new_function);
+
+static int lct_tp_gesture_node_callback(bool flag)
+{
+	unsigned int input;
+	if (rmi4_data->suspend) {
+		pr_err("ERROR: TP is suspend!\n");
+		return -1;
+	}
+	if(flag) {
+		synaptics_gesture_func_on = true;
+		input = 1;
+		pr_err("enable gesture mode\n");
+	} else {
+		synaptics_gesture_func_on = false;
+		input = 0;
+		pr_err("disable gesture mode\n");
+	}
+	if (rmi4_data->f11_wakeup_gesture || rmi4_data->f12_wakeup_gesture)
+		rmi4_data->enable_wakeup_gesture = input;
+	return 0;
+}
 
 static int synaptics_rmi4_probe(struct platform_device *pdev)
 {
@@ -4167,8 +4291,6 @@ static int synaptics_rmi4_probe(struct platform_device *pdev)
 
 	const struct synaptics_dsx_hw_interface *hw_if;
 	const struct synaptics_dsx_board_data *bdata;
-
-	struct sched_param param = { .sched_priority = MAX_RT_PRIO / 2 };
 
 	hw_if = pdev->dev.platform_data;
 	if (!hw_if) {
@@ -4258,14 +4380,12 @@ static int synaptics_rmi4_probe(struct platform_device *pdev)
 		goto err_set_input_dev;
 	}
 
-#ifdef CONFIG_TOUCHSCREEN_COMMON
 	retval = tp_common_set_double_tap_ops(&double_tap_ops);
 	if (retval < 0) {
 		dev_err(&pdev->dev,
 				"%s: Failed to create double_tap node err=%d\n",
 				__func__, retval);
 	}
-#endif
 
 #ifdef CONFIG_FB
 	rmi4_data->fb_notifier.notifier_call = synaptics_rmi4_fb_notifier_cb;
@@ -4320,6 +4440,11 @@ static int synaptics_rmi4_probe(struct platform_device *pdev)
 		}
 	}
 
+	retval = init_lct_tp_gesture(lct_tp_gesture_node_callback);
+	if (retval < 0) {
+		dev_err(&pdev->dev, "Failed to add /proc/tp_gesture node!\n");
+	}
+
 	for (attr_count = 0; attr_count < ARRAY_SIZE(attrs); attr_count++) {
 		retval = sysfs_create_file(&rmi4_data->input_dev->dev.kobj,
 				&attrs[attr_count].attr);
@@ -4331,37 +4456,35 @@ static int synaptics_rmi4_probe(struct platform_device *pdev)
 		}
 	}
 
+	synaptics_rmi4_proc_init(rmi4_data->input_dev->dev.kobj.sd);
+
 #ifdef USE_DATA_SERVER
 	memset(&interrupt_signal, 0, sizeof(interrupt_signal));
 	interrupt_signal.si_signo = SIGIO;
 	interrupt_signal.si_code = SI_USER;
 #endif
 
-	rmi4_data->rb_workqueue =
-			create_singlethread_workqueue("dsx_rebuild_workqueue");
+	rmi4_data->rb_workqueue = create_workqueue("dsx_rebuild_workqueue");
 	INIT_DELAYED_WORK(&rmi4_data->rb_work, synaptics_rmi4_rebuild_work);
 
-	init_kthread_worker(&exp_data.touch_worker);
-	exp_data.touch_worker_thread = kthread_create(kthread_worker_fn, &exp_data.touch_worker, "touch_worker_thread");
-	if (IS_ERR(exp_data.touch_worker_thread)) {
-		pr_err("%s: Cannot init touch_worker kthread", __func__);
-		return -EFAULT;
-	}
-	sched_setscheduler(exp_data.touch_worker_thread, SCHED_FIFO, &param);
-	wake_up_process(exp_data.touch_worker_thread);
-	init_kthread_work(&exp_data.touch_work, synaptics_rmi4_exp_fn_work);
+	exp_data.workqueue = create_workqueue("dsx_exp_workqueue");
+	INIT_DELAYED_WORK(&exp_data.work, synaptics_rmi4_exp_fn_work);
 	exp_data.rmi4_data = rmi4_data;
 	exp_data.queue_work = true;
-	queue_kthread_work(&exp_data.touch_worker, &exp_data.touch_work);
+	queue_delayed_work(exp_data.workqueue,
+			&exp_data.work,
+			0);
 
 #ifdef FB_READY_RESET
-	rmi4_data->reset_workqueue =
-			create_singlethread_workqueue("dsx_reset_workqueue");
+	rmi4_data->reset_workqueue = create_workqueue("dsx_reset_workqueue");
 	INIT_WORK(&rmi4_data->reset_work, synaptics_rmi4_reset_work);
 	queue_work(rmi4_data->reset_workqueue, &rmi4_data->reset_work);
 #endif
+#if  1
 	input_set_capability(rmi4_data->input_dev, EV_KEY, KEY_WAKEUP);
-
+	input_set_capability(rmi4_data->input_dev, EV_KEY, KEY_DOUBLE_TAP);
+	rmi4_data->input_dev->event =synaptics_gesture_switch;
+#endif
 	INIT_WORK(&rmi4_data->fb_notify_work, tp_fb_notifier_resume_work);
 
 	return retval;
@@ -4432,6 +4555,10 @@ static int synaptics_rmi4_remove(struct platform_device *pdev)
 	flush_workqueue(rmi4_data->reset_workqueue);
 	destroy_workqueue(rmi4_data->reset_workqueue);
 #endif
+
+	cancel_delayed_work_sync(&exp_data.work);
+	flush_workqueue(exp_data.workqueue);
+	destroy_workqueue(exp_data.workqueue);
 
 	cancel_delayed_work_sync(&rmi4_data->rb_work);
 	flush_workqueue(rmi4_data->rb_workqueue);

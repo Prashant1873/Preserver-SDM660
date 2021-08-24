@@ -34,10 +34,7 @@
 * 1.Included header files
 *****************************************************************************/
 #include "focaltech_core.h"
-#ifdef CONFIG_TOUCHSCREEN_COMMON
 #include <linux/input/tp_common.h>
-#endif
-
 #if FTS_GESTURE_EN
 /******************************************************************************
 * Private constant and macro definitions using #define
@@ -219,7 +216,6 @@ static ssize_t fts_gesture_buf_store(struct device *dev, struct device_attribute
     return -EPERM;
 }
 
-#ifdef CONFIG_TOUCHSCREEN_COMMON
 static ssize_t double_tap_show(struct kobject *kobj,
                               struct kobj_attribute *attr, char *buf)
 {
@@ -244,8 +240,90 @@ static struct tp_common_ops double_tap_ops = {
        .show = double_tap_show,
        .store = double_tap_store
 };
-#endif
 
+static int fts_gesture_read(struct seq_file *file, void *v)
+{
+	seq_printf(file, "%d", fts_gesture_data.mode);
+	return 0;
+}
+
+static int fts_gesture_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, fts_gesture_read, inode);
+}
+
+static ssize_t fts_gesture_write(struct file *file, const char __user *buf,
+			 size_t count, loff_t *ppos)
+{
+	uint8_t str;
+	if(copy_from_user(&str, buf, 1)); // ignore
+	fts_gesture_data.mode = (str == '1');
+	return 1;
+}
+
+ static const struct file_operations fts_gesture_fops = {
+	.owner = THIS_MODULE,
+	.open = fts_gesture_open,
+	.write = fts_gesture_write,
+	.release = single_release,
+	.read = seq_read,
+	.llseek = seq_lseek,
+};
+#define FTS_GESTURE_NAME "fts_wake_gesture"
+
+static int proc_tp_gesture_read(struct seq_file *sf, void *ignored)
+{
+	seq_printf(sf, "%d\n", fts_gesture_data.mode);
+	return 0;
+}
+
+static int proc_tp_gesture_open(struct inode *i, struct file *f)
+{
+	return single_open(f, proc_tp_gesture_read, i);
+}
+
+static ssize_t proc_tp_gesture_write(struct file *file,
+		const char __user *buf, size_t size, loff_t *ppos)
+{
+	ssize_t cnt;
+	char *page = NULL;
+	unsigned int input = 0;
+
+	page = kzalloc(128, GFP_KERNEL);
+	if (IS_ERR_OR_NULL(page))
+		return -ENOMEM;
+
+	cnt = simple_write_to_buffer(page, sizeof(page), ppos, buf, size);
+	if (cnt <= 0) {
+		kfree(page);
+		return -EINVAL;
+	}
+
+	if (sscanf(page, "%u", &input) != 1) {
+		kfree(page);
+		return -EINVAL;
+	}
+
+	fts_gesture_data.mode = input > 1 ? 1 : 0;
+
+	kfree(page);
+	return cnt;
+}
+
+static const struct file_operations proc_tp_gesture_fops = {
+	.owner = THIS_MODULE,
+	.open = proc_tp_gesture_open,
+	.write = proc_tp_gesture_write,
+	.release = single_release,
+	.read = seq_read,
+	.llseek = seq_lseek,
+};
+
+static void proc_tp_entry_init(void)
+{
+	if (IS_ERR_OR_NULL(proc_create("tp_gesture", 0666, NULL, &proc_tp_gesture_fops)))
+		pr_err("%s: add /proc/tp_gesture error!\n", __func__);
+}
 /*****************************************************************************
 *   Name: fts_create_gesture_sysfs
 *  Brief:
@@ -294,6 +372,10 @@ static void fts_gesture_report(struct input_dev *input_dev, int gesture_id)
         break;
     case GESTURE_DOUBLECLICK:
         gesture = KEY_WAKEUP;
+        input_report_key(input_dev, KEY_DOUBLE_TAP, 1);
+        input_sync(input_dev);
+        input_report_key(input_dev, KEY_DOUBLE_TAP, 0);
+        input_sync(input_dev);
         break;
     case GESTURE_O:
         gesture = KEY_GESTURE_O;
@@ -567,12 +649,11 @@ int fts_gesture_init(struct fts_ts_data *ts_data)
 {
     struct i2c_client *client = ts_data->client;
     struct input_dev *input_dev = ts_data->input_dev;
-#ifdef CONFIG_TOUCHSCREEN_COMMON
     int ret;
-#endif
 
     FTS_FUNC_ENTER();
     input_set_capability(input_dev, EV_KEY, KEY_WAKEUP);
+    input_set_capability(input_dev, EV_KEY, KEY_DOUBLE_TAP);   
     input_set_capability(input_dev, EV_KEY, KEY_GESTURE_U);
     input_set_capability(input_dev, EV_KEY, KEY_GESTURE_UP);
     input_set_capability(input_dev, EV_KEY, KEY_GESTURE_DOWN);
@@ -604,15 +685,13 @@ int fts_gesture_init(struct fts_ts_data *ts_data)
     __set_bit(KEY_GESTURE_Z, input_dev->keybit);
 
     fts_create_gesture_sysfs(client);
-
-#ifdef CONFIG_TOUCHSCREEN_COMMON
-       ret = tp_common_set_double_tap_ops(&double_tap_ops);
-       if (ret < 0) {
-               FTS_ERROR("%s: Failed to create double_tap node err=%d\n",
-                       __func__, ret);
-       }
-#endif
-
+    ret = tp_common_set_double_tap_ops(&double_tap_ops);
+    if (ret < 0) {
+           FTS_ERROR("%s: Failed to create double_tap node err=%d\n", __func__, ret);
+    }
+    proc_create("wake_node", 0666, NULL, &fts_gesture_fops);
+    proc_create(FTS_GESTURE_NAME, 0666, NULL, &fts_gesture_fops);
+	proc_tp_entry_init();
     fts_gesture_data.mode = ENABLE;
     fts_gesture_data.active = DISABLE;
 

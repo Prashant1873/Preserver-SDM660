@@ -36,7 +36,7 @@
 /*****************************************************************************
 * Macro definitions using #define
 *****************************************************************************/
-#ifdef CONFIG_MACH_XIAOMI_TULIP
+#if defined(CONFIG_KERNEL_CUSTOM_E7T)
 #define FTS_INI_FILE_PATH               "/system/etc/"
 #else
 #define FTS_INI_FILE_PATH               "/mnt/sdcard/"
