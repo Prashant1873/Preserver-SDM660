@@ -18,7 +18,7 @@ make_build(){
 		make O=out ARCH=arm64 $1
 		make -j$(nproc --all) O=out \
                       ARCH=arm64 \
-                      CC=clang \
+                      CC="ccache clang" \
                       HOSTCC=clang \
                       AR=llvm-ar \
                       NM=llvm-nm \
@@ -31,14 +31,18 @@ make_build(){
 		export CROSS_COMPILE=$(pwd)/gcc-arm64/bin/aarch64-elf-
 		export CROSS_COMPILE_ARM32=$(pwd)/gcc-arm32/bin/arm-eabi-
 		export KBUILD_COMPILER_STRING=$(gcc-arm64/bin/aarch64-elf-gcc --version | head -n 1)
-                export PATH="/usr/lib/ccache:$PATH"
+		export PATH=gcc-arm64/bin:$PATH
+		export PATH="$(pwd)/clang/bin:${PATH}"
 		sendInfo	"<b>===============================</b>" \
         	"<b>Start Building :</b> <code>Preserver Kernel 4.19</code>" \
         	"<b>Source Branch :</b> <code>$(git rev-parse --abbrev-ref HEAD)</code>" \
                 "<b>Toolchain :</b> <code>$KBUILD_COMPILER_STRING</code>" \
                 "<b>===============================</b>"
 		make O=out ARCH=arm64 $1
-		make -j$(nproc --all) O=out ARCH=arm64
+		make -j$(nproc --all) O=out ARCH=arm64 \
+			HOSTCXX=aarch64-elf-g++         \
+      HOSTLD=ld.lld                   \
+      LD_LIBRARY_PATH=gcc-arm64/lib:$LD_LIBRARY_PATH
 	fi
 }
 
@@ -116,7 +120,7 @@ gen_toolchain(){
 	print "Cloning toolchain files..." green
 	if [ $TOOLCHAIN == "clang" ]
 	then
-		git clone --depth=1 https://github.com/kdrag0n/proton-clang clang
+		git clone --depth=1 https://github.com/okta-10/mystic-clang clang
 	else
 		git clone -q --depth=1 https://github.com/mvaisakh/gcc-arm64 -b  gcc-master gcc-arm64
 		git clone -q --depth=1 https://github.com/mvaisakh/gcc-arm -b gcc-master gcc-arm32
