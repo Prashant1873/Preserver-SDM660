@@ -163,7 +163,8 @@ static void _ab_buslevel_update(struct kgsl_pwrctrl *pwr,
  * constraint if one exists.
  */
 static unsigned int _adjust_pwrlevel(struct kgsl_pwrctrl *pwr, int level,
-					struct kgsl_pwr_constraint *pwrc)
+					struct kgsl_pwr_constraint *pwrc,
+					int popp)
 {
 	unsigned int max_pwrlevel = max_t(unsigned int, pwr->thermal_pwrlevel,
 		pwr->max_pwrlevel);
@@ -185,6 +186,9 @@ static unsigned int _adjust_pwrlevel(struct kgsl_pwrctrl *pwr, int level,
 	}
 	break;
 	}
+
+	if (popp && (max_pwrlevel < pwr->active_pwrlevel))
+		max_pwrlevel = pwr->active_pwrlevel;
 
 	if (level < max_pwrlevel)
 		return max_pwrlevel;
@@ -236,7 +240,7 @@ void kgsl_pwrctrl_buslevel_update(struct kgsl_device *device,
 		pwr->bus_percent_ab = 0;
 		pwr->bus_ab_mbytes = 0;
 	}
-//	trace_kgsl_buslevel(device, pwr->active_pwrlevel, buslevel);
+	trace_kgsl_buslevel(device, pwr->active_pwrlevel, buslevel);
 	last_vote_buslevel = buslevel;
 
 	/* buslevel is the IB vote, update the AB */
@@ -331,8 +335,8 @@ void kgsl_pwrctrl_pwrlevel_change(struct kgsl_device *device,
 	if ((pwr->constraint.type != KGSL_CONSTRAINT_NONE) &&
 		(time_after(jiffies, pwr->constraint.expires))) {
 		/* Trace the constraint being un-set by the driver */
-//		trace_kgsl_constraint(device, pwr->constraint.type,
-//						old_level, 0);
+		trace_kgsl_constraint(device, pwr->constraint.type,
+						old_level, 0);
 		/*Invalidate the constraint set */
 		pwr->constraint.expires = 0;
 		pwr->constraint.type = KGSL_CONSTRAINT_NONE;
@@ -342,7 +346,8 @@ void kgsl_pwrctrl_pwrlevel_change(struct kgsl_device *device,
 	 * Adjust the power level if required by thermal, max/min,
 	 * constraints, etc
 	 */
-	new_level = _adjust_pwrlevel(pwr, new_level, &pwr->constraint);
+	new_level = _adjust_pwrlevel(pwr, new_level, &pwr->constraint,
+					device->pwrscale.popp_level);
 
 	/*
 	 * If thermal cycling is required and the new level hits the
@@ -404,10 +409,10 @@ void kgsl_pwrctrl_pwrlevel_change(struct kgsl_device *device,
 			pwrlevel->gpu_freq, clocks[0]);
 	_isense_clk_set_rate(pwr, pwr->active_pwrlevel);
 
-//	trace_kgsl_pwrlevel(device,
-//			pwr->active_pwrlevel, pwrlevel->gpu_freq,
-//			pwr->previous_pwrlevel,
-//			pwr->pwrlevels[old_level].gpu_freq);
+	trace_kgsl_pwrlevel(device,
+			pwr->active_pwrlevel, pwrlevel->gpu_freq,
+			pwr->previous_pwrlevel,
+			pwr->pwrlevels[old_level].gpu_freq);
 
 	/*
 	 * Some targets do not support the bandwidth requirement of
@@ -479,7 +484,7 @@ void kgsl_pwrctrl_set_constraint(struct kgsl_device *device,
 	if (device == NULL || pwrc == NULL)
 		return;
 	constraint = _adjust_pwrlevel(&device->pwrctrl,
-				device->pwrctrl.active_pwrlevel, pwrc);
+				device->pwrctrl.active_pwrlevel, pwrc, 0);
 	pwrc_old = &device->pwrctrl.constraint;
 
 	/*
@@ -496,7 +501,7 @@ void kgsl_pwrctrl_set_constraint(struct kgsl_device *device,
 		pwrc_old->expires = jiffies + device->pwrctrl.interval_timeout;
 		kgsl_pwrctrl_pwrlevel_change(device, constraint);
 		/* Trace the constraint being set by the driver */
-//		trace_kgsl_constraint(device, pwrc_old->type, constraint, 1);
+		trace_kgsl_constraint(device, pwrc_old->type, constraint, 1);
 	} else if ((pwrc_old->type == pwrc->type) &&
 		(pwrc_old->hint.pwrlevel.level == constraint)) {
 			pwrc_old->owner_id = id;
@@ -1157,6 +1162,87 @@ static ssize_t kgsl_pwrctrl_bus_split_store(struct device *dev,
 	return count;
 }
 
+static ssize_t kgsl_pwrctrl_default_pwrlevel_show(struct device *dev,
+					struct device_attribute *attr,
+					char *buf)
+{
+	struct kgsl_device *device = kgsl_device_from_dev(dev);
+	if (device == NULL)
+		return 0;
+	return snprintf(buf, PAGE_SIZE, "%d\n",
+		device->pwrctrl.default_pwrlevel);
+}
+
+static ssize_t kgsl_pwrctrl_default_pwrlevel_store(struct device *dev,
+					struct device_attribute *attr,
+					const char *buf, size_t count)
+{
+	struct kgsl_device *device = kgsl_device_from_dev(dev);
+	struct kgsl_pwrctrl *pwr;
+	struct kgsl_pwrscale *pwrscale;
+	int ret;
+	unsigned int level = 0;
+
+	if (device == NULL)
+		return 0;
+
+	pwr = &device->pwrctrl;
+	pwrscale = &device->pwrscale;
+
+	ret = kgsl_sysfs_store(buf, &level);
+	if (ret)
+		return ret;
+
+	if (level > pwr->num_pwrlevels - 2)
+		goto done;
+
+	mutex_lock(&device->mutex);
+	pwr->default_pwrlevel = level;
+	pwrscale->gpu_profile.profile.initial_freq
+			= pwr->pwrlevels[level].gpu_freq;
+
+	mutex_unlock(&device->mutex);
+done:
+	return count;
+}
+
+
+static ssize_t kgsl_popp_store(struct device *dev,
+					struct device_attribute *attr,
+					const char *buf, size_t count)
+{
+	unsigned int val = 0;
+	struct kgsl_device *device = kgsl_device_from_dev(dev);
+	int ret;
+
+	if (device == NULL)
+		return 0;
+
+	ret = kgsl_sysfs_store(buf, &val);
+	if (ret)
+		return ret;
+
+	mutex_lock(&device->mutex);
+	if (val)
+		set_bit(POPP_ON, &device->pwrscale.popp_state);
+	else
+		clear_bit(POPP_ON, &device->pwrscale.popp_state);
+	mutex_unlock(&device->mutex);
+
+	return count;
+}
+
+static ssize_t kgsl_popp_show(struct device *dev,
+					   struct device_attribute *attr,
+					   char *buf)
+{
+	struct kgsl_device *device = kgsl_device_from_dev(dev);
+	if (device == NULL)
+		return 0;
+	return snprintf(buf, PAGE_SIZE, "%d\n",
+		test_bit(POPP_ON, &device->pwrscale.popp_state));
+}
+
 static ssize_t kgsl_pwrctrl_gpu_model_show(struct device *dev,
 					struct device_attribute *attr,
 					char *buf)
@@ -1437,6 +1523,10 @@ static DEVICE_ATTR(force_rail_on, 0644,
 static DEVICE_ATTR(bus_split, 0644,
 	kgsl_pwrctrl_bus_split_show,
 	kgsl_pwrctrl_bus_split_store);
+static DEVICE_ATTR(default_pwrlevel, 0644,
+	kgsl_pwrctrl_default_pwrlevel_show,
+	kgsl_pwrctrl_default_pwrlevel_store);
+static DEVICE_ATTR(popp, 0644, kgsl_popp_show, kgsl_popp_store);
 static DEVICE_ATTR(force_no_nap, 0644,
 	kgsl_pwrctrl_force_no_nap_show,
 	kgsl_pwrctrl_force_no_nap_store);
@@ -1473,6 +1563,8 @@ static const struct device_attribute *pwrctrl_attr_list[] = {
 	&dev_attr_force_rail_on,
 	&dev_attr_force_no_nap,
 	&dev_attr_bus_split,
+	&dev_attr_default_pwrlevel,
+	&dev_attr_popp,
 	&dev_attr_gpu_model,
 	&dev_attr_gpu_busy_percentage,
 	&dev_attr_min_clock_mhz,
@@ -1542,7 +1634,7 @@ void kgsl_pwrctrl_busy_time(struct kgsl_device *device, u64 time, u64 busy)
 	stats->total = 0;
 	stats->busy = 0;
 
-//	trace_kgsl_gpubusy(device, stats->busy_old, stats->total_old);
+	trace_kgsl_gpubusy(device, stats->busy_old, stats->total_old);
 }
 EXPORT_SYMBOL(kgsl_pwrctrl_busy_time);
 
@@ -1558,8 +1650,8 @@ static void kgsl_pwrctrl_clk(struct kgsl_device *device, int state,
 	if (state == KGSL_PWRFLAGS_OFF) {
 		if (test_and_clear_bit(KGSL_PWRFLAGS_CLK_ON,
 			&pwr->power_flags)) {
-//			trace_kgsl_clk(device, state,
-//					kgsl_pwrctrl_active_freq(pwr));
+			trace_kgsl_clk(device, state,
+					kgsl_pwrctrl_active_freq(pwr));
 			/* Disable gpu-bimc-interface clocks */
 			if (pwr->gpu_bimc_int_clk &&
 					pwr->gpu_bimc_interface_enabled) {
@@ -1598,8 +1690,8 @@ static void kgsl_pwrctrl_clk(struct kgsl_device *device, int state,
 	} else if (state == KGSL_PWRFLAGS_ON) {
 		if (!test_and_set_bit(KGSL_PWRFLAGS_CLK_ON,
 			&pwr->power_flags)) {
-//			trace_kgsl_clk(device, state,
-//					kgsl_pwrctrl_active_freq(pwr));
+			trace_kgsl_clk(device, state,
+					kgsl_pwrctrl_active_freq(pwr));
 			/* High latency clock maintenance. */
 			if (device->state != KGSL_STATE_NAP) {
 				if (pwr->pwrlevels[0].gpu_freq > 0) {
@@ -1671,7 +1763,7 @@ static void kgsl_pwrctrl_axi(struct kgsl_device *device, int state)
 	if (state == KGSL_PWRFLAGS_OFF) {
 		if (test_and_clear_bit(KGSL_PWRFLAGS_AXI_ON,
 			&pwr->power_flags)) {
-//			trace_kgsl_bus(device, state);
+			trace_kgsl_bus(device, state);
 			kgsl_pwrctrl_buslevel_update(device, false);
 
 			kgsl_pwrctrl_suspend_devbw(pwr);
@@ -1679,7 +1771,7 @@ static void kgsl_pwrctrl_axi(struct kgsl_device *device, int state)
 	} else if (state == KGSL_PWRFLAGS_ON) {
 		if (!test_and_set_bit(KGSL_PWRFLAGS_AXI_ON,
 			&pwr->power_flags)) {
-//			trace_kgsl_bus(device, state);
+			trace_kgsl_bus(device, state);
 			kgsl_pwrctrl_buslevel_update(device, true);
 
 			kgsl_pwrctrl_resume_devbw(pwr);
@@ -1742,7 +1834,7 @@ static int kgsl_pwrctrl_pwrrail(struct kgsl_device *device, int state)
 	if (state == KGSL_PWRFLAGS_OFF) {
 		if (test_and_clear_bit(KGSL_PWRFLAGS_POWER_ON,
 			&pwr->power_flags)) {
-//			trace_kgsl_rail(device, state);
+			trace_kgsl_rail(device, state);
 			device->ftbl->regulator_disable_poll(device);
 		}
 	} else if (state == KGSL_PWRFLAGS_ON) {
@@ -1753,8 +1845,8 @@ static int kgsl_pwrctrl_pwrrail(struct kgsl_device *device, int state)
 				if (status)
 					clear_bit(KGSL_PWRFLAGS_POWER_ON,
 						&pwr->power_flags);
-//				else
-//					trace_kgsl_rail(device, state);
+				else
+					trace_kgsl_rail(device, state);
 		}
 	}
 
@@ -1768,13 +1860,13 @@ static void kgsl_pwrctrl_irq(struct kgsl_device *device, int state)
 	if (state == KGSL_PWRFLAGS_ON) {
 		if (!test_and_set_bit(KGSL_PWRFLAGS_IRQ_ON,
 			&pwr->power_flags)) {
-//			trace_kgsl_irq(device, state);
+			trace_kgsl_irq(device, state);
 			enable_irq(pwr->interrupt_num);
 		}
 	} else if (state == KGSL_PWRFLAGS_OFF) {
 		if (test_and_clear_bit(KGSL_PWRFLAGS_IRQ_ON,
 			&pwr->power_flags)) {
-//			trace_kgsl_irq(device, state);
+			trace_kgsl_irq(device, state);
 			if (in_interrupt())
 				disable_irq_nosync(pwr->interrupt_num);
 			else
@@ -2039,45 +2131,6 @@ static inline void _close_clks(struct kgsl_device *device)
 		devm_clk_put(&device->pdev->dev, pwr->gpu_bimc_int_clk);
 }
 
-static bool _gpu_freq_supported(struct kgsl_pwrctrl *pwr, unsigned int freq)
-{
-	int i;
-
-	for (i = pwr->num_pwrlevels - 2; i >= 0; i--) {
-		if (pwr->pwrlevels[i].gpu_freq == freq)
-			return true;
-	}
-
-	return false;
-}
-
-static void kgsl_pwrctrl_disable_unused_opp(struct kgsl_device *device)
-{
-	struct device *dev = &device->pdev->dev;
-	struct dev_pm_opp *opp;
-	unsigned long freq = 0;
-	int ret;
-
-	ret = dev_pm_opp_get_opp_count(dev);
-	/* Return early, If no OPP table or OPP count is zero */
-	if (ret <= 0)
-		return;
-
-	while (1) {
-		rcu_read_lock();
-		opp = dev_pm_opp_find_freq_ceil(dev, &freq);
-		rcu_read_unlock();
-
-		if (IS_ERR(opp))
-			break;
-
-		if (!_gpu_freq_supported(&device->pwrctrl, freq))
-			dev_pm_opp_disable(dev, freq);
-
-		freq++;
-	}
-}
-
 int kgsl_pwrctrl_init(struct kgsl_device *device)
 {
 	int i, k, m, n = 0, result, freq;
@@ -2134,7 +2187,6 @@ int kgsl_pwrctrl_init(struct kgsl_device *device)
 		pwr->pwrlevels[i].gpu_freq = freq;
 	}
 
-	kgsl_pwrctrl_disable_unused_opp(device);
 	kgsl_pwrctrl_clk_set_rate(pwr->grp_clks[0],
 		pwr->pwrlevels[pwr->num_pwrlevels - 1].gpu_freq, clocks[0]);
 
@@ -2371,9 +2423,24 @@ void kgsl_idle_check(struct work_struct *work)
 		   || device->state ==  KGSL_STATE_NAP) {
 
 		if (!atomic_read(&device->active_cnt)) {
+			spin_lock(&device->submit_lock);
+			if (device->submit_now) {
+				spin_unlock(&device->submit_lock);
+				goto done;
+			}
+			/* Don't allow GPU inline submission in SLUMBER */
+			if (requested_state == KGSL_STATE_SLUMBER)
+				device->slumber = true;
+			spin_unlock(&device->submit_lock);
+
 			ret = kgsl_pwrctrl_change_state(device,
 					device->requested_state);
 			if (ret == -EBUSY) {
+				if (requested_state == KGSL_STATE_SLUMBER) {
+					spin_lock(&device->submit_lock);
+					device->slumber = false;
+					spin_unlock(&device->submit_lock);
+				}
 				/*
 				 * If the GPU is currently busy, restore
 				 * the requested state and reschedule
@@ -2384,7 +2451,7 @@ void kgsl_idle_check(struct work_struct *work)
 				kgsl_schedule_work(&device->idle_check_ws);
 			}
 		}
-
+done:
 		if (!ret)
 			kgsl_pwrctrl_request_state(device, KGSL_STATE_NONE);
 
@@ -2444,8 +2511,10 @@ static int kgsl_pwrctrl_enable(struct kgsl_device *device)
 	if (pwr->wakeup_maxpwrlevel) {
 		level = pwr->max_pwrlevel;
 		pwr->wakeup_maxpwrlevel = 0;
+	} else if (kgsl_popp_check(device)) {
+		level = pwr->active_pwrlevel;
 	} else {
-		level = pwr->num_pwrlevels - 1;
+		level = pwr->default_pwrlevel;
 	}
 
 	kgsl_pwrctrl_pwrlevel_change(device, level);
@@ -2810,16 +2879,23 @@ EXPORT_SYMBOL(kgsl_pwrctrl_change_state);
 static void kgsl_pwrctrl_set_state(struct kgsl_device *device,
 				unsigned int state)
 {
-//	trace_kgsl_pwr_set_state(device, state);
+	trace_kgsl_pwr_set_state(device, state);
 	device->state = state;
 	device->requested_state = KGSL_STATE_NONE;
+
+	spin_lock(&device->submit_lock);
+	if (state == KGSL_STATE_SLUMBER || state == KGSL_STATE_SUSPEND)
+		device->slumber = true;
+	else
+		device->slumber = false;
+	spin_unlock(&device->submit_lock);
 }
 
 static void kgsl_pwrctrl_request_state(struct kgsl_device *device,
 				unsigned int state)
 {
-//	if (state != KGSL_STATE_NONE && state != device->requested_state)
-//		trace_kgsl_pwr_request_state(device, state);
+	if (state != KGSL_STATE_NONE && state != device->requested_state)
+		trace_kgsl_pwr_request_state(device, state);
 	device->requested_state = state;
 }
 
@@ -2875,8 +2951,8 @@ int kgsl_active_count_get(struct kgsl_device *device)
 	}
 	if (ret == 0)
 		atomic_inc(&device->active_cnt);
-//	trace_kgsl_active_count(device,
-//		(unsigned long) __builtin_return_address(0));
+	trace_kgsl_active_count(device,
+		(unsigned long) __builtin_return_address(0));
 	return ret;
 }
 EXPORT_SYMBOL(kgsl_active_count_get);
@@ -2912,8 +2988,8 @@ void kgsl_active_count_put(struct kgsl_device *device)
 			jiffies + device->pwrctrl.interval_timeout);
 	}
 
-//	trace_kgsl_active_count(device,
-//		(unsigned long) __builtin_return_address(0));
+	trace_kgsl_active_count(device,
+		(unsigned long) __builtin_return_address(0));
 
 	wake_up(&device->active_cnt_wq);
 }
@@ -2942,7 +3018,7 @@ int kgsl_active_count_wait(struct kgsl_device *device, int count)
 	while (atomic_read(&device->active_cnt) > count) {
 		long ret;
 		mutex_unlock(&device->mutex);
-		ret = wait_event_interruptible_timeout(device->active_cnt_wq,
+		ret = wait_event_timeout(device->active_cnt_wq,
 			_check_active_count(device, count), wait_jiffies);
 		mutex_lock(&device->mutex);
 		result = ret == 0 ? -ETIMEDOUT : 0;

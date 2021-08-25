@@ -1,4 +1,4 @@
-/* Copyright (c) 2002,2007-2017,2019, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2002,2007-2017,2019-2020 The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -90,7 +90,7 @@ static void adreno_get_submit_time(struct adreno_device *adreno_dev,
 		time->ticks = 0;
 
 	/* Trace the GPU time to create a mapping to ftrace time */
-//	trace_adreno_cmdbatch_sync(rb->drawctxt_active, time->ticks);
+	trace_adreno_cmdbatch_sync(rb->drawctxt_active, time->ticks);
 
 	/* Get the kernel clock for time since boot */
 	time->ktime = local_clock();
@@ -1058,8 +1058,8 @@ done:
 		kgsl_memdesc_unmap(&entry->memdesc);
 
 
-//	trace_kgsl_issueibcmds(device, context->id, numibs, drawobj->timestamp,
-//			drawobj->flags, ret, drawctxt->type);
+	trace_kgsl_issueibcmds(device, context->id, numibs, drawobj->timestamp,
+			drawobj->flags, ret, drawctxt->type);
 
 	if (link != link_onstack)
 		kfree(link);
@@ -1121,7 +1121,7 @@ int adreno_ringbuffer_waittimestamp(struct adreno_ringbuffer *rb,
 	mutex_unlock(&device->mutex);
 
 	wait_time = msecs_to_jiffies(msecs);
-	if (0 == wait_event_interruptible_timeout(rb->ts_expire_waitq,
+	if (0 == wait_event_timeout(rb->ts_expire_waitq,
 		!kgsl_event_pending(device, &rb->events, timestamp,
 				adreno_ringbuffer_wait_callback, NULL),
 		wait_time))
